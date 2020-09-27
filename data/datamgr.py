@@ -11,6 +11,10 @@ from abc import abstractmethod
 NUM_WORKERS=12
 
 class TransformLoader:
+    """
+    get a composed tranform including ('RandomResizedCrop()', 'ImageJitter',
+     'RandomHorizontalFlip', 'ToTensor', 'Normalize', 'Resize')
+    """
     def __init__(self, image_size, 
                  normalize_param    = dict(mean= [0.485, 0.456, 0.406] , std=[0.229, 0.224, 0.225]),
                  jitter_param       = dict(Brightness=0.4, Contrast=0.4, Color=0.4)):
@@ -54,6 +58,9 @@ class DataManager:
 
 
 class SimpleDataManager(DataManager):
+    """
+    used by ['baseline', 'baseline++']
+    """
     def __init__(self, image_size, batch_size, jigsaw=False, rotation=False, isAircraft=False, grey=False, return_name=False, drop_last=False, shuffle=True):
         super(SimpleDataManager, self).__init__()
         self.batch_size = batch_size
@@ -125,6 +132,9 @@ class SimpleDataManager(DataManager):
         return im.astype('uint8')
 
 class SetDataManager(DataManager):
+    """
+    used by ['protonet','matchingnet','relationnet', 'relationnet_softmax', 'maml', 'maml_approx']
+    """
     def __init__(self, image_size, n_way, n_support, n_query, n_eposide =100, \
                 jigsaw=False, lbda=0.0, lbda_proto=0.0, rotation=False, isAircraft=False, grey=False):        
         super(SetDataManager, self).__init__()

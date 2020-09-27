@@ -12,3 +12,4 @@ filelists/flowers/images
 filelists/dogs/images
 filelists/tieredImagenet/ILSVRC2015/*
 .vscode/
+*.tgz
