@@ -278,7 +278,7 @@ class ProtoNet(MetaTemplate):
         acc = np.sum(topk_ind[:,0] == y_query.numpy())/len(y_query.numpy())
         y_query = Variable(y_query.cuda())
 
-        return self.loss_fn(scores, y_query), acc
+        return self.loss_fn(scores, y_query.long()), acc
 
     def set_forward_loss_unlabel(self, patches=None, patches_label=None):
         if self.jigsaw:
