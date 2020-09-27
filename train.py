@@ -34,7 +34,9 @@ def train(base_loader, val_loader, model, start_epoch, stop_epoch, params):
 
     max_acc = 0       
     writer = SummaryWriter(log_dir=params.checkpoint_dir)
+    start = time.time()
     for epoch in range(start_epoch,stop_epoch):
+        print("a epoch cost {} s".format(time.time() - start))
         model.train()
         model.train_loop(epoch, base_loader, optimizer, writer) #model are called by reference, no need to return 
         model.eval()
