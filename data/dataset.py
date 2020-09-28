@@ -127,9 +127,11 @@ class SetDataset:
 
         self.sub_meta = {}
         for cl in self.cl_list:
+            # init dict
             self.sub_meta[cl] = []
 
         for x,y in zip(self.meta['image_names'],self.meta['image_labels']):
+            # create subdataset for each class
             self.sub_meta[y].append(x)
 
         self.sub_dataloader = [] 

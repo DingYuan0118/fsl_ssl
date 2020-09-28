@@ -34,16 +34,19 @@ def train(base_loader, val_loader, model, start_epoch, stop_epoch, params):
 
     max_acc = 0       
     writer = SummaryWriter(log_dir=params.checkpoint_dir)
-    start = time.time()
     for epoch in range(start_epoch,stop_epoch):
-        print("a epoch cost {} s".format(time.time() - start))
+        start_epoch_time = time.time()
+
         model.train()
         model.train_loop(epoch, base_loader, optimizer, writer) #model are called by reference, no need to return 
+        print("a epoch traininig process cost {}s".format(time.time() - start_epoch_time))
         model.eval()
 
         if not os.path.isdir(params.checkpoint_dir):
             os.makedirs(params.checkpoint_dir)
-
+        
+        start_test_time = time.time()
+        # TODO: can change the test frequency to reduce training time
         if params.jigsaw:
             acc, acc_jigsaw = model.test_loop( val_loader)
             writer.add_scalar('val/acc', acc, epoch)
@@ -55,6 +58,7 @@ def train(base_loader, val_loader, model, start_epoch, stop_epoch, params):
         else:    
             acc = model.test_loop( val_loader)
             writer.add_scalar('val/acc', acc, epoch)
+        print("a epoch test process cost{}s".format(time.time() - start_test_time))
         if acc > max_acc : #for baseline and baseline++, we don't use validation here so we let acc = -1
             print("best model! save...")
             max_acc = acc
@@ -64,6 +68,7 @@ def train(base_loader, val_loader, model, start_epoch, stop_epoch, params):
         if ((epoch+1) % params.save_freq==0) or (epoch==stop_epoch-1):
             outfile = os.path.join(params.checkpoint_dir, '{:d}.tar'.format(epoch))
             torch.save({'epoch':epoch, 'state':model.state_dict()}, outfile)
+        print("a epoch cost {} s".format(time.time() - start_epoch_time))
 
     # return model
 
