@@ -233,6 +233,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2, att_type=att_type, use_bn=self.use_bn)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, att_type=att_type, use_bn=self.use_bn)
 
+        # initialize weight
         for key in self.state_dict():
             if key.split('.')[-1]=="weight":
                 if "conv" in key:

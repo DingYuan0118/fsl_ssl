@@ -258,7 +258,7 @@ class ProtoNet(MetaTemplate):
 
             return x_, y_
         elif self.rotation:
-            patches = patches.view(B*T,C,H,W).cuda()
+            patches = patches.view(B*T,C,H,W).cuda() # size(300,3,224,224)
             x_ = self.feature(patches)#torch.Size([64, 512, 1, 1])
             x_ = x_.squeeze()
             x_ = self.fc6(x_)
