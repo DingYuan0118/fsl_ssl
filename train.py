@@ -241,13 +241,13 @@ if __name__=='__main__':
         modelfile   = params.loadfile
         checkpoint_dir = params.loadfile
     else:
-        checkpoint_dir = params.checkpoint_dir
+        checkpoint_dir = params.checkpoint_dir # checkpoint path
         if params.save_iter != -1:
             modelfile   = get_assigned_file(checkpoint_dir,params.save_iter)
         elif params.method in ['baseline', 'baseline++'] :
             modelfile   = get_resume_file(checkpoint_dir)
         else:
-            modelfile   = get_best_file(checkpoint_dir)
+            modelfile   = get_best_file(checkpoint_dir) # return the best.tar file
 
     if params.method in ['maml', 'maml_approx']:
         if modelfile is not None:
@@ -270,11 +270,11 @@ if __name__=='__main__':
             model.task_update_num = 100 #We perform adaptation on MAML simply by updating more times.
         model.eval()
         acc_mean, acc_std = model.test_loop( novel_loader, return_std = True)
-    else:
+    else: # eg: for Protonet
         if params.save_iter != -1:
             outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel_" + str(params.save_iter)+ ".hdf5")
         else:
-            outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel.hdf5")
+            outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel.hdf5") # path for use the best model to produce feature
 
         datamgr          = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft)
         loadfile         = os.path.join('filelists', params.dataset, 'novel.json')
