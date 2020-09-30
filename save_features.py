@@ -36,6 +36,9 @@ def save_features(model, data_loader, outfile ):
 
     count_var = f.create_dataset('count', (1,), dtype='i')
     count_var[0] = count
+    # add some printing to understand the program
+    print("Message about the feature file:\n")
+    f.visititems(print)
 
     f.close()
 

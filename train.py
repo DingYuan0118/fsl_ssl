@@ -17,7 +17,7 @@ from methods.matchingnet import MatchingNet
 from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file
-#from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 from torch.utils.tensorboard import SummaryWriter
 import json
 from model_resnet import *
@@ -34,7 +34,7 @@ def train(base_loader, val_loader, model, start_epoch, stop_epoch, params):
 
     max_acc = 0       
     writer = SummaryWriter(log_dir=params.checkpoint_dir)
-    for epoch in range(start_epoch,stop_epoch):
+    for epoch in range(start_epoch, stop_epoch):
         start_epoch_time = time.time()
 
         model.train()
@@ -60,7 +60,7 @@ def train(base_loader, val_loader, model, start_epoch, stop_epoch, params):
                 acc = model.test_loop( val_loader)
                 writer.add_scalar('val/acc', acc, epoch)
             print("a epoch test process cost{}s".format(time.time() - start_test_time))
-            if acc > max_acc : #for baseline and baseline++, we don't use validation here so we let acc = -1
+            if acc > max_acc :  #for baseline and baseline++, we don't use validation here so we let acc = -1
                 print("best model! save...")
                 max_acc = acc
                 outfile = os.path.join(params.checkpoint_dir, 'best_model.tar')
@@ -270,7 +270,7 @@ if __name__=='__main__':
             model.task_update_num = 100 #We perform adaptation on MAML simply by updating more times.
         model.eval()
         acc_mean, acc_std = model.test_loop( novel_loader, return_std = True)
-    else: # eg: for Protonet
+    else:  # eg: for Protonet
         if params.save_iter != -1:
             outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel_" + str(params.save_iter)+ ".hdf5")
         else:
