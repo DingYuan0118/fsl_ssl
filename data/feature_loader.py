@@ -35,6 +35,7 @@ def init_loader(filename):
 
     cl_data_file = {}
     for cl in class_list:
+        # init dict
         cl_data_file[cl] = []
     for ind in inds:
         cl_data_file[labels[ind]].append( feats[ind])
