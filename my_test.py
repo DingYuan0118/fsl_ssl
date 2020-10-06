@@ -22,63 +22,13 @@ from torch.utils.tensorboard import SummaryWriter
 import json
 from model_resnet import *
 
-def train(base_loader, val_loader, model, start_epoch, stop_epoch, params):    
-    if params.optimization == 'Adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
-    elif params.optimization == 'SGD':
-        optimizer = torch.optim.SGD(model.parameters(), lr=params.lr)
-    elif params.optimization == 'Nesterov':
-        optimizer = torch.optim.SGD(model.parameters(), lr=params.lr, nesterov=True, momentum=0.9, weight_decay=params.wd)
-    else:
-       raise ValueError('Unknown optimization, please define by yourself')
-
-    max_acc = 0       
-    writer = SummaryWriter(log_dir=params.checkpoint_dir)
-    for epoch in range(start_epoch, stop_epoch):
-        start_epoch_time = time.time()
-
-        model.train()
-        model.train_loop(epoch, base_loader, optimizer, writer) #model are called by reference, no need to return 
-        print("a epoch traininig process cost {}s".format(time.time() - start_epoch_time))
-        model.eval()
-
-        if not os.path.isdir(params.checkpoint_dir):
-            os.makedirs(params.checkpoint_dir)
-        
-        start_test_time = time.time()
-        # TODO: can change the val frequency to reduce training time
-        if ((epoch+1) % 10==0) or (epoch==stop_epoch-1):
-            if params.jigsaw:
-                acc, acc_jigsaw = model.test_loop( val_loader)
-                writer.add_scalar('val/acc', acc, epoch)
-                writer.add_scalar('val/acc_jigsaw', acc_jigsaw, epoch)
-            elif params.rotation:
-                acc, acc_rotation = model.test_loop( val_loader)
-                writer.add_scalar('val/acc', acc, epoch)
-                writer.add_scalar('val/acc_rotation', acc_rotation, epoch)
-            else:    
-                acc = model.test_loop( val_loader)
-                writer.add_scalar('val/acc', acc, epoch)
-            print("a epoch test process cost{}s".format(time.time() - start_test_time))
-            if acc > max_acc :  #for baseline and baseline++, we don't use validation here so we let acc = -1
-                print("best model! save...")
-                max_acc = acc
-                outfile = os.path.join(params.checkpoint_dir, 'best_model.tar')
-                torch.save({'epoch':epoch, 'state':model.state_dict()}, outfile)
-
-            if ((epoch+1) % params.save_freq==0) or (epoch==stop_epoch-1):
-                outfile = os.path.join(params.checkpoint_dir, '{:d}.tar'.format(epoch))
-                torch.save({'epoch':epoch, 'state':model.state_dict()}, outfile)
-            print("a epoch cost {} s".format(time.time() - start_epoch_time))
-
-    # return model
 
 if __name__=='__main__':
     np.random.seed(10)
-    params = parse_args('train')
+    params = parse_args('mytest')
 
     isAircraft = (params.dataset == 'aircrafts')    
-        
+    
     base_file = os.path.join('filelists', params.dataset, params.base+'.json')
     val_file   = os.path.join('filelists', params.dataset, 'val.json')
      
@@ -113,17 +63,20 @@ if __name__=='__main__':
                                             loss_type = 'dist', jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
 
     elif params.method in ['protonet','matchingnet','relationnet', 'relationnet_softmax', 'maml', 'maml_approx']:
+
+        ## for test process, dont need train dataset
         n_query = max(1, int(params.n_query * params.test_n_way/params.train_n_way)) #if test_n_way is smaller than train_n_way, reduce n_query to keep batch size small
  
         train_few_shot_params    = dict(n_way = params.train_n_way, n_support = params.n_shot, \
                                         jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation) 
-        base_datamgr            = SetDataManager(image_size, n_query = n_query,  **train_few_shot_params, isAircraft=isAircraft)
-        base_loader             = base_datamgr.get_data_loader( base_file , aug = params.train_aug )
+        # base_datamgr            = SetDataManager(image_size, n_query = n_query,  **train_few_shot_params, isAircraft=isAircraft)
+        # base_loader             = base_datamgr.get_data_loader( base_file , aug = params.train_aug )
          
         test_few_shot_params     = dict(n_way = params.test_n_way, n_support = params.n_shot, \
                                         jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation) 
-        val_datamgr             = SetDataManager(image_size, n_query = n_query, **test_few_shot_params, isAircraft=isAircraft)
-        val_loader              = val_datamgr.get_data_loader( val_file, aug = False) 
+        # val_datamgr             = SetDataManager(image_size, n_query = n_query, **test_few_shot_params, isAircraft=isAircraft)
+        # val_loader              = val_datamgr.get_data_loader( val_file, aug = False) 
+
 
         if params.method == 'protonet':
             model           = ProtoNet( model_dict[params.model], **train_few_shot_params, use_bn=(not params.no_bn), pretrain=params.pretrain)
@@ -183,47 +136,49 @@ if __name__=='__main__':
     if not os.path.isdir(params.checkpoint_dir):
         os.makedirs(params.checkpoint_dir)
 
-    start_epoch = params.start_epoch
-    stop_epoch = params.stop_epoch
-    if params.method == 'maml' or params.method == 'maml_approx' :
-        stop_epoch = params.stop_epoch * model.n_task #maml use multiple tasks in one update 
+    # start_epoch = params.start_epoch
+    # stop_epoch = params.stop_epoch
+    # if params.method == 'maml' or params.method == 'maml_approx' :
+    #     stop_epoch = params.stop_epoch * model.n_task #maml use multiple tasks in one update 
 
-    if params.resume:
-        resume_file = get_resume_file(params.checkpoint_dir)
-        if resume_file is not None:
-            tmp = torch.load(resume_file)
-            start_epoch = tmp['epoch']+1
-            model.load_state_dict(tmp['state'])
-            del tmp
-    elif params.warmup: #We also support warmup from pretrained baseline feature, but we never used in our paper
-        baseline_checkpoint_dir = 'checkpoints/%s/%s_%s' %(params.dataset, params.model, 'baseline')
-        if params.train_aug:
-            baseline_checkpoint_dir += '_aug'
-        warmup_resume_file = get_resume_file(baseline_checkpoint_dir)
-        tmp = torch.load(warmup_resume_file)
-        if tmp is not None: 
-            state = tmp['state']
-            state_keys = list(state.keys())
-            for i, key in enumerate(state_keys):
-                if "feature." in key:
-                    newkey = key.replace("feature.","")  # an architecture model has attribute 'feature', load architecture feature to backbone by casting name from 'feature.trunk.xx' to 'trunk.xx'  
-                    state[newkey] = state.pop(key)
-                else:
-                    state.pop(key)
-            model.feature.load_state_dict(state)
-        else:
-            raise ValueError('No warm_up file')
+    # if params.resume:
+    #     resume_file = get_resume_file(params.checkpoint_dir)
+    #     if resume_file is not None:
+    #         tmp = torch.load(resume_file)
+    #         start_epoch = tmp['epoch']+1
+    #         model.load_state_dict(tmp['state'])
+    #         del tmp
+    # elif params.warmup: #We also support warmup from pretrained baseline feature, but we never used in our paper
+    #     baseline_checkpoint_dir = 'checkpoints/%s/%s_%s' %(params.dataset, params.model, 'baseline')
+    #     if params.train_aug:
+    #         baseline_checkpoint_dir += '_aug'
+    #     warmup_resume_file = get_resume_file(baseline_checkpoint_dir)
+    #     tmp = torch.load(warmup_resume_file)
+    #     if tmp is not None: 
+    #         state = tmp['state']
+    #         state_keys = list(state.keys())
+    #         for i, key in enumerate(state_keys):
+    #             if "feature." in key:
+    #                 newkey = key.replace("feature.","")  # an architecture model has attribute 'feature', load architecture feature to backbone by casting name from 'feature.trunk.xx' to 'trunk.xx'  
+    #                 state[newkey] = state.pop(key)
+    #             else:
+    #                 state.pop(key)
+    #         model.feature.load_state_dict(state)
+    #     else:
+    #         raise ValueError('No warm_up file')
     
-    if params.loadfile != '':
-        print('Loading model from: ' + params.loadfile)
-        checkpoint = torch.load(params.loadfile)
-        ## remove last layer for baseline
-        pretrained_dict = {k: v for k, v in checkpoint['state'].items() if 'classifier' not in k and 'loss_fn' not in k}
-        print('Load model from:',params.loadfile)
-        model.load_state_dict(pretrained_dict, strict=False)
+    # if params.loadfile != '':
+    #     print('Loading model from: ' + params.loadfile)
+    #     checkpoint = torch.load(params.loadfile)
+    #     ## remove last layer for baseline
+    #     pretrained_dict = {k: v for k, v in checkpoint['state'].items() if 'classifier' not in k and 'loss_fn' not in k}
+    #     print('Load model from:',params.loadfile)
+    #     model.load_state_dict(pretrained_dict, strict=False)
 
     json.dump(vars(params), open(params.checkpoint_dir+'/configs.json','w'))
-    train(base_loader, val_loader,  model, start_epoch, stop_epoch, params) # can comment this line for test 
+
+    # for test no need to train
+    #train(base_loader, val_loader,  model, start_epoch, stop_epoch, params) 
 
 
     ##### from save_features.py (except maml)#####
@@ -266,19 +221,22 @@ if __name__=='__main__':
         datamgr          = SetDataManager(image_size, n_eposide = iter_num, n_query = 15 , **few_shot_params, isAircraft=isAircraft)
         loadfile         = os.path.join('filelists', params.dataset, 'novel.json')
         novel_loader     = datamgr.get_data_loader( loadfile, aug = False)
+
         if params.adaptation:
             model.task_update_num = 100 #We perform adaptation on MAML simply by updating more times.
         model.eval()
         acc_mean, acc_std = model.test_loop( novel_loader, return_std = True)
-    else:  # eg: for Protonet
-        if params.save_iter != -1:
-            outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel_" + str(params.save_iter)+ ".hdf5")
-        else:
-            outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel.hdf5") # path for use the best model to produce feature
 
-        datamgr          = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft)
-        loadfile         = os.path.join('filelists', params.dataset, 'novel.json')
-        data_loader      = datamgr.get_data_loader(loadfile, aug = False)
+    else:  ## eg: for Protonet
+
+        # if params.save_iter != -1
+        #     outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel_" + str(params.save_iter)+ ".hdf5")
+        # else:
+        #     outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), "novel.hdf5") # path for use the best model to produce feature
+
+        # datamgr          = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft)
+        # loadfile         = os.path.join('filelists', params.dataset, 'novel.json')
+        # data_loader      = datamgr.get_data_loader(loadfile, aug = False)
 
         tmp = torch.load(modelfile)
         state = tmp['state']
@@ -294,17 +252,25 @@ if __name__=='__main__':
         model.eval()
         model = model.cuda()
         model.eval()
+        
+        ## don`t use save feature function here
 
-        dirname = os.path.dirname(outfile)
-        if not os.path.isdir(dirname):
-            os.makedirs(dirname)
-        print('save outfile at:', outfile)
-        from save_features import save_features
-        save_features(model, data_loader, outfile)
+        # dirname = os.path.dirname(outfile)
+        # if not os.path.isdir(dirname):
+        #     os.makedirs(dirname)
+        # print('save outfile at:', outfile)
+
+        # from save_features import save_features
+        # save_features(model, data_loader, outfile)
 
         ### from test.py ###
         from test import feature_evaluation
-        novel_file = os.path.join( checkpoint_dir.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
+        checkpoint_dir_test = checkpoint_dir.replace(params.dataset, params.test_dataset)
+        if os.path.isdir(checkpoint_dir_test):
+            os.makedirs(checkpoint_dir_test)
+
+
+        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
         print('load novel file from:',novel_file)
         import data.feature_loader as feat_loader
         cl_data_file = feat_loader.init_loader(novel_file)
@@ -318,7 +284,7 @@ if __name__=='__main__':
         acc_std  = np.std(acc_all)
         print('%d Test Acc = %4.2f%% +- %4.2f%%' %(iter_num, acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
         
-        with open(os.path.join( checkpoint_dir.replace("checkpoints","features"), split_str +"_test.txt") , 'a') as f:
+        with open(os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +"_test.txt") , 'a') as f:
             timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
             aug_str = '-aug' if params.train_aug else ''
             aug_str += '-adapted' if params.adaptation else ''

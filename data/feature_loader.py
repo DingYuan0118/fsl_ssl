@@ -39,5 +39,5 @@ def init_loader(filename):
         cl_data_file[cl] = []
     for ind in inds:
         cl_data_file[labels[ind]].append( feats[ind])
-
+    # return a dict the key is label and the value is data
     return cl_data_file
