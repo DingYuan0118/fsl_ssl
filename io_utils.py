@@ -4,6 +4,7 @@ import glob
 import argparse
 import backbone
 from model_resnet import *
+import json
 
 model_dict = dict(
             Conv4 = backbone.Conv4,
@@ -134,3 +135,42 @@ def get_checkpoint_path(params):
         print('test checkpoint path:', check_dir_test)
         return checkpoint_dir, check_dir_test
 
+def combine_dataset(source1, source2):
+    """
+    combine different dataset.
+
+    params:
+        source1: dataset1 json path
+        source2: dataset2 json path
+    """
+    with open(source1, "r") as f:
+        dataset1 = json.load(f)
+    with open(source2, "r") as f:
+        dataset2 = json.load(f)
+    
+    dataset = {}
+    keys = dataset1.keys()
+    for key in keys:
+        # init dict for deep copy
+        # ! do not use dataset1 to init dataset, this will cause a reference problem
+        dataset[key] = []
+    for key in keys:
+        dataset[key].extend(dataset1[key])
+
+    # combine dataset 2
+    for key in keys:
+        if key != "image_labels":
+            dataset[key].extend(dataset2[key])  
+        else:
+            dataset[key].extend((np.array(dataset2[key]) + len(dataset1["label_names"])).tolist())
+    return dataset
+
+
+# test functions
+if __name__ == "__main__":
+    source1 = "filelists\\cars\\base.json"
+    source2 = "filelists\\aircrafts\\base.json"
+    dataset = combine_dataset(source1, source2)
+    with open("combine.json", "w") as f:
+        json.dump(dataset, f)
+    print(dataset.keys())
