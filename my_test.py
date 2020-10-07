@@ -16,7 +16,7 @@ from methods.protonet import ProtoNet
 from methods.matchingnet import MatchingNet
 from methods.relationnet import RelationNet
 from methods.maml import MAML
-from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file
+from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
 # from tensorboardX import SummaryWriter
 from torch.utils.tensorboard import SummaryWriter
 import json
@@ -104,35 +104,12 @@ if __name__=='__main__':
 
     model = model.cuda()
 
-    params.checkpoint_dir = 'checkpoints/%s/%s_%s_%s' %(params.dataset, params.date, params.model, params.method)
-    if params.train_aug:
-        params.checkpoint_dir += '_aug'
-    if not params.method  in ['baseline', 'baseline++']: 
-        params.checkpoint_dir += '_%dway_%dshot_%dquery' %( params.train_n_way, params.n_shot, params.n_query)
-    
-    if params.dataset_unlabel is not None:
-        params.checkpoint_dir += params.dataset_unlabel
-        params.checkpoint_dir += str(params.bs)
-
-    ## Track bn stats
-    if params.tracking:
-        params.checkpoint_dir += '_tracking'
-
-    ## Add jigsaw
-    if params.jigsaw:
-        params.checkpoint_dir += '_jigsaw_lbda%.2f'%(params.lbda)
-        params.checkpoint_dir += params.optimization
-
-    ## Add rotation
-    if params.rotation:
-        params.checkpoint_dir += '_rotation_lbda%.2f'%(params.lbda)
-        params.checkpoint_dir += params.optimization
-
-    params.checkpoint_dir += '_lr%.4f'%(params.lr)
-    if params.finetune:
-        params.checkpoint_dir += '_finetune'
-
-    print('Checkpoint path:',params.checkpoint_dir)
+    if params.test_dataset == params.transfered_dataset:
+        params.checkpoint_dir = get_checkpoint_path(params)
+        params.checkpoint_dir_test = params.checkpoint_dir
+    else :
+        params.checkpoint_dir, params.checkpoint_dir_test = get_checkpoint_path(params)
+    checkpoint_dir_test = params.checkpoint_dir_test
     if not os.path.isdir(params.checkpoint_dir):
         os.makedirs(params.checkpoint_dir)
 
@@ -182,11 +159,13 @@ if __name__=='__main__':
 
 
     ##### from save_features.py (except maml)#####
-    split = 'novel'
+    # three situation for recognition36 dataset ["novel", "novel_car", "novel_plane"]
+    split = 'novel_car'
     if params.save_iter != -1:
         split_str = split + "_" +str(params.save_iter)
     else:
         split_str = split
+
 
     iter_num = 600
     few_shot_params = dict(n_way = params.test_n_way , n_support = params.n_shot)
@@ -247,6 +226,9 @@ if __name__=='__main__':
                 state[newkey] = state.pop(key)
             else:
                 state.pop(key)
+        ## for protonets
+        if params.test_n_way != params.train_n_way:
+            model.n_way = params.test_n_way
 
         model.feature.load_state_dict(state)
         model.eval()
@@ -265,9 +247,6 @@ if __name__=='__main__':
 
         ### from test.py ###
         from test import feature_evaluation
-        checkpoint_dir_test = checkpoint_dir.replace(params.dataset, params.test_dataset)
-        if os.path.isdir(checkpoint_dir_test):
-            os.makedirs(checkpoint_dir_test)
 
 
         novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes

@@ -50,13 +50,17 @@ if __name__ == '__main__':
     assert params.method != 'maml' and params.method != 'maml_approx', 'maml do not support save_feature and run'
 
     image_size = params.image_size
-    loadfile = os.path.join('filelists', params.test_dataset, 'novel.json')
+
+    # three situation for recognition36 dataset ["novel", "novel_car", "novel_plane"]
+    split = 'novel'
+    loadfile = os.path.join('filelists', params.test_dataset, split+".json")
 
     # if params.json_seed is not None:
     #     checkpoint_dir = '%s/checkpoints/%s_%s/%s_%s_%s' %(configs.save_dir, params.dataset, params.json_seed, params.date, params.model, params.method)
     # else:
     if params.test_dataset == params.transfered_dataset:
         checkpoint_dir = get_checkpoint_path(params)
+        checkpoint_dir_test = checkpoint_dir
     else :
         checkpoint_dir, checkpoint_dir_test = get_checkpoint_path(params)
     
@@ -76,7 +80,6 @@ if __name__ == '__main__':
         os.makedirs(checkpoint_dir_test)
 
 
-    split = 'novel'
     if params.save_iter != -1:
         outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_" + str(params.save_iter)+ ".hdf5")
     else:
@@ -128,6 +131,8 @@ if __name__ == '__main__':
 
     model.feature.load_state_dict(state)
     model.feature.eval()
+    model.eval()
+    model.cuda()
     model.eval()
 
     dirname = os.path.dirname(outfile)
