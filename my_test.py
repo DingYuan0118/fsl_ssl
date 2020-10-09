@@ -160,7 +160,7 @@ if __name__=='__main__':
 
     ##### from save_features.py (except maml)#####
     # three situation for recognition36 dataset ["novel", "novel_car", "novel_plane"]
-    split = 'novel_car'
+    split = 'novel'
     if params.save_iter != -1:
         split_str = split + "_" +str(params.save_iter)
     else:
@@ -234,6 +234,10 @@ if __name__=='__main__':
         model.eval()
         model = model.cuda()
         model.eval()
+        total_params = sum(p.numel() for p in model.parameters())
+        print("{} model {} backbone have {} parameters.".format(model.__class__.__name__, params.model, total_params))
+        total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print("{} model {} backbone have {} training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))
         
         ## don`t use save feature function here
 
