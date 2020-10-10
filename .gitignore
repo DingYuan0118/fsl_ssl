@@ -14,3 +14,7 @@ filelists/tieredImagenet/ILSVRC2015/*
 .vscode/
 *.tgz
 *.jpg
+*.bmp
+*.jpg
+*.xml
+*.txt
