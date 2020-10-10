@@ -150,6 +150,11 @@ if __name__=='__main__':
        raise ValueError('Unknown method')
 
     model = model.cuda()
+    total_params = sum(p.numel() for p in model.parameters())
+    print("{} model {} backbone have {} parameters.".format(model.__class__.__name__, params.model, total_params))
+    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("{} model {} backbone have {} training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))
+
 
     params.checkpoint_dir = 'checkpoints/%s/%s_%s_%s' %(params.dataset, params.date, params.model, params.method)
     if params.train_aug:
@@ -223,7 +228,7 @@ if __name__=='__main__':
         model.load_state_dict(pretrained_dict, strict=False)
 
     json.dump(vars(params), open(params.checkpoint_dir+'/configs.json','w'))
-    train(base_loader, val_loader,  model, start_epoch, stop_epoch, params)
+    train(base_loader, val_loader,  model, start_epoch, stop_epoch, params) # can comment this line for test 
 
 
     ##### from save_features.py (except maml)#####
