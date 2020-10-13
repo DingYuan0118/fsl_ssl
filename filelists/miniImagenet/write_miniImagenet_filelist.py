@@ -5,9 +5,10 @@ import os
 import json
 import random
 import re
+from pathlib import Path
 
 import sys
-sys.path.append("../../")
+# sys.path.append("../../")
 # from configs import *
 
 savedir = './'
@@ -33,12 +34,13 @@ for dataset in dataset_list:
                 folderlist.append(label)
                 filelists[dataset][label] = []
                 fnames = listdir(join(imagenet_path, label))
-                fname_number = [ int(re.split('_|\.', fname)[1]) for fname in fnames]
+                fname_number = [ int(fname[9:-4]) for fname in fnames]
                 sorted_fnames = list(zip( *sorted(  zip(fnames, fname_number), key = lambda f_tuple: f_tuple[1] )))[0]
                  
-            fid = int(fid[-5:])-1
-            fname = join( imagenet_path, label, sorted_fnames[fid] )
-            filelists[dataset][label].append(fname)
+            # fid = int(fid[-5:])-1
+            fig_name = fid + '.jpg'
+            if fig_name in sorted_fnames:
+                filelists[dataset][label].append(Path(join( imagenet_path, label,  fig_name)).as_posix())
 
     for key, filelist in filelists[dataset].items():
         cl += 1
