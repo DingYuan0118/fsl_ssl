@@ -40,7 +40,7 @@ for dataset in dataset_list:
             # fid = int(fid[-5:])-1
             fig_name = fid + '.jpg'
             if fig_name in sorted_fnames:
-                filelists[dataset][label].append(Path(join( imagenet_path, label,  fig_name)).as_posix())
+                filelists[dataset][label].append(Path(join( "filelists/miniImagenet", imagenet_path, label,  fig_name)).as_posix())
 
     for key, filelist in filelists[dataset].items():
         cl += 1
