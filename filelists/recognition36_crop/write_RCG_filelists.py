@@ -33,7 +33,7 @@ print(len(classfile_list_all))
 for mode in ["car", "plane", "all"]:
     if mode == "all":
         for dataset in dataset_list:
-            dataset += "_car"
+            dataset += "_all"
             file_list = []
             label_list = []
             for i, classfile_list in enumerate(classfile_list_all):
