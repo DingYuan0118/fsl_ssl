@@ -67,6 +67,8 @@ def parse_args(script):
     if script == "mytest":
         parser.add_argument("--test_dataset", default="recognition36", help="for custom few shot dataset test for transfer situation")
         parser.add_argument("--transfered_dataset", default="cars", help="the base training dataset for novel test dataset")
+        parser.add_argument("--test_n_query", default=16, type=int, help="the number of query for test")
+        parser.add_argument("--test_n_shot", default=5, type=int, help="the number of support for test")
 
     parser.add_argument('--layer', default=-1, type=int)
         
