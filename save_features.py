@@ -13,7 +13,7 @@ from methods.protonet import ProtoNet
 from methods.matchingnet import MatchingNet
 from methods.relationnet import RelationNet
 from methods.maml import MAML
-from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file
+from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
 from model_resnet import *
 
 def save_features(model, data_loader, outfile ):
@@ -43,44 +43,27 @@ def save_features(model, data_loader, outfile ):
     f.close()
 
 if __name__ == '__main__':
-    params = parse_args('save_features')
+    params = parse_args('mytest')
 
-    isAircraft = (params.dataset == 'aircrafts')
+    isAircraft = (params.test_dataset == 'aircrafts')
 
     assert params.method != 'maml' and params.method != 'maml_approx', 'maml do not support save_feature and run'
 
     image_size = params.image_size
-    loadfile = os.path.join('filelists', params.dataset, 'novel.json')
 
-    if params.json_seed is not None:
-        checkpoint_dir = '%s/checkpoints/%s_%s/%s_%s_%s' %(configs.save_dir, params.dataset, params.json_seed, params.date, params.model, params.method)
-    else:
-        checkpoint_dir = '%s/checkpoints/%s/%s_%s_%s' %(configs.save_dir, params.dataset, params.date, params.model, params.method)
-    if params.train_aug:
-        checkpoint_dir += '_aug'
-    if not params.method in ['baseline', 'baseline++'] :
-        checkpoint_dir += '_%dway_%dshot_%dquery' %( params.train_n_way, params.n_shot, params.n_query)
+    # three situation for recognition36 dataset ["novel", "novel_car", "novel_plane"]
+    split = 'novel'
+    loadfile = os.path.join('filelists', params.test_dataset, split+".json")
 
-    ## Use another dataset (dataloader) for unlabeled data
-    if params.dataset_unlabel is not None:
-        checkpoint_dir += params.dataset_unlabel
-        checkpoint_dir += str(params.bs)
-
-    ## Add jigsaw
-    if params.jigsaw:
-        checkpoint_dir += '_jigsaw_lbda%.2f'%(params.lbda)
-        checkpoint_dir += params.optimization
-    ## Add rotation
-    if params.rotation:
-        checkpoint_dir += '_rotation_lbda%.2f'%(params.lbda)
-        checkpoint_dir += params.optimization
-
-    checkpoint_dir += '_lr%.4f'%(params.lr)
-    if params.finetune:
-        checkpoint_dir += '_finetune'
-
-    print('checkpoint_dir:',checkpoint_dir)
-
+    # if params.json_seed is not None:
+    #     checkpoint_dir = '%s/checkpoints/%s_%s/%s_%s_%s' %(configs.save_dir, params.dataset, params.json_seed, params.date, params.model, params.method)
+    # else:
+    if params.test_dataset == params.transfered_dataset:
+        checkpoint_dir = get_checkpoint_path(params)
+        checkpoint_dir_test = checkpoint_dir
+    else :
+        checkpoint_dir, checkpoint_dir_test = get_checkpoint_path(params)
+    
     if params.loadfile != '':
         modelfile   = params.loadfile
         checkpoint_dir = params.loadfile
@@ -92,10 +75,16 @@ if __name__ == '__main__':
         else:
             modelfile   = get_best_file(checkpoint_dir)
 
+
+    if os.path.isdir(checkpoint_dir_test):
+        os.makedirs(checkpoint_dir_test)
+
+
     if params.save_iter != -1:
-        outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), split + "_" + str(params.save_iter)+ ".hdf5")
+        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_" + str(params.save_iter)+ ".hdf5")
     else:
-        outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), split + ".hdf5")
+        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + ".hdf5")
+
 
     datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft)
     data_loader      = datamgr.get_data_loader(loadfile, aug = False)
@@ -142,6 +131,8 @@ if __name__ == '__main__':
 
     model.feature.load_state_dict(state)
     model.feature.eval()
+    model.eval()
+    model.cuda()
     model.eval()
 
     dirname = os.path.dirname(outfile)

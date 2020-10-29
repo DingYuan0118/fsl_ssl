@@ -4,6 +4,7 @@ import glob
 import argparse
 import backbone
 from model_resnet import *
+import json
 
 model_dict = dict(
             Conv4 = backbone.Conv4,
@@ -62,6 +63,10 @@ def parse_args(script):
         parser.add_argument('--stop_epoch'  , default=600, type=int,help='Stopping epoch') # for meta-learning methods, each epoch contains 100 episodes
         parser.add_argument('--resume'      , action='store_true',  help='continue from previous trained model with largest epoch')
         parser.add_argument('--warmup'      , action='store_true',  help='continue from baseline, neglected if resume is true') #never used in the paper
+    
+    if script == "mytest":
+        parser.add_argument("--test_dataset", default="recognition36", help="for custom few shot dataset test for transfer situation")
+        parser.add_argument("--transfered_dataset", default="cars", help="the base training dataset for novel test dataset")
 
     parser.add_argument('--layer', default=-1, type=int)
         
@@ -90,3 +95,82 @@ def get_best_file(checkpoint_dir):
         return best_file
     else:
         return get_resume_file(checkpoint_dir)
+
+def get_checkpoint_path(params):
+    # for test process
+    checkpoint_dir = 'checkpoints/%s/%s_%s_%s' %(params.transfered_dataset, params.date, params.model, params.method)
+    if params.train_aug:
+        checkpoint_dir += '_aug'
+    if not params.method in ['baseline', 'baseline++'] :
+        checkpoint_dir += '_%dway_%dshot_%dquery' %( params.train_n_way, params.n_shot, params.n_query)
+
+    ## Use another dataset (dataloader) for unlabeled data
+    if params.dataset_unlabel is not None:
+        checkpoint_dir += params.dataset_unlabel
+        checkpoint_dir += str(params.bs)
+
+    ## Track bn stats
+    if params.tracking:
+        params.checkpoint_dir += '_tracking'
+
+    ## Add jigsaw
+    if params.jigsaw:
+        checkpoint_dir += '_jigsaw_lbda%.2f'%(params.lbda)
+        checkpoint_dir += params.optimization
+    ## Add rotation
+    if params.rotation:
+        checkpoint_dir += '_rotation_lbda%.2f'%(params.lbda)
+        checkpoint_dir += params.optimization
+
+    checkpoint_dir += '_lr%.4f'%(params.lr)
+    if params.finetune:
+        checkpoint_dir += '_finetune'
+
+    print('checkpoint path:',checkpoint_dir)
+    if params.test_dataset == params.transfered_dataset:
+        return checkpoint_dir
+    else:
+        check_dir_test = checkpoint_dir.replace(params.transfered_dataset, params.test_dataset)
+        check_dir_test += "_{}".format(params.transfered_dataset)
+        print('test checkpoint path:', check_dir_test)
+        return checkpoint_dir, check_dir_test
+
+def combine_dataset(source1, source2):
+    """
+    combine different dataset.
+
+    params:
+        source1: dataset1 json path
+        source2: dataset2 json path
+    """
+    with open(source1, "r") as f:
+        dataset1 = json.load(f)
+    with open(source2, "r") as f:
+        dataset2 = json.load(f)
+    
+    dataset = {}
+    keys = dataset1.keys()
+    for key in keys:
+        # init dict for deep copy
+        # ! do not use dataset1 to init dataset, this will cause a reference problem
+        dataset[key] = []
+    for key in keys:
+        dataset[key].extend(dataset1[key])
+
+    # combine dataset 2
+    for key in keys:
+        if key != "image_labels":
+            dataset[key].extend(dataset2[key])  
+        else:
+            dataset[key].extend((np.array(dataset2[key]) + len(dataset1["label_names"])).tolist())
+    return dataset
+
+
+# test functions
+if __name__ == "__main__":
+    source1 = "filelists\\cars\\base.json"
+    source2 = "filelists\\aircrafts\\base.json"
+    dataset = combine_dataset(source1, source2)
+    with open("combine.json", "w") as f:
+        json.dump(dataset, f)
+    print(dataset.keys())
