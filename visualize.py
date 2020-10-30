@@ -32,7 +32,7 @@ if __name__ == "__main__":
                                             loss_type = 'dist', jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
 
     elif params.method in ['protonet','matchingnet','relationnet', 'relationnet_softmax', 'maml', 'maml_approx']:
-        n_query = max(1, int(params.n_query * params.test_n_way/params.train_n_way)) #if test_n_way is smaller than train_n_way, reduce n_query to keep batch size small
+        # n_query = max(1, int(params.n_query * params.test_n_way/params.train_n_way)) #if test_n_way is smaller than train_n_way, reduce n_query to keep batch size small
 
         train_few_shot_params    = dict(n_way = params.train_n_way, n_support = params.n_shot, \
                                     jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation) 
@@ -97,40 +97,7 @@ if __name__ == "__main__":
     few_shot_params = dict(n_way = params.test_n_way , n_support = params.n_shot)
     # acc_all = []
 
-    if params.method in ['maml', 'maml_approx']:
-        if modelfile is not None:
-            tmp = torch.load(modelfile)
-            state = tmp['state']
-            state_keys = list(state.keys())
-            for i, key in enumerate(state_keys):
-                if "feature." in key:
-                    newkey = key.replace("feature.","")  # an architecture model has attribute 'feature', load architecture feature to backbone by casting name from 'feature.trunk.xx' to 'trunk.xx'
-                    state[newkey] = state.pop(key)
-                else:
-                    state.pop(key)
-            model.feature.load_state_dict(tmp['state'])
-        print('modelfile:',modelfile)
-        model.eval()
 
-    else:  ## eg: for Protonet
-        tmp = torch.load(modelfile)
-        state = tmp['state']
-        state_keys = list(state.keys())
-        for i, key in enumerate(state_keys):
-            if "feature." in key:
-                newkey = key.replace("feature.","")  # an architecture model has attribute 'feature', load architecture feature to backbone by casting name from 'feature.trunk.xx' to 'trunk.xx'
-                state[newkey] = state.pop(key)
-            else:
-                state.pop(key)
-        ## for protonets
-        if params.test_n_way != params.train_n_way:
-            model.n_way = params.test_n_way
-
-        model.feature.load_state_dict(state)
-        model.eval()
-        model = model.cuda()
-        model.eval()
-        total_params = sum(p.numel() for p in model.parameters())
         print("{} model {} backbone have {} parameters.".format(model.__class__.__name__, params.model, total_params))
         total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print("{} model {} backbone have {} training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))
@@ -143,20 +110,20 @@ if __name__ == "__main__":
         
         # from visualize_datapre.py,already tested
         # params
-        n_way = params.test_n_way
-        n_shot = params.n_shot
-        n_query = params.n_query
+        test_n_way = params.test_n_way
+        test_n_shot = params.test_n_shot
+        test_n_query = params.test_n_query
         image_size = params.image_size
 
 
         classes_id = sub_meta.keys()
-        selected_classes_id = random.sample(classes_id, n_way)
+        selected_classes_id = random.sample(classes_id, test_n_way)
 
         # random selected images_path
         selected_imgs = {}
         for i in selected_classes_id:
             sub_imgs = sub_meta[i]
-            sub_selected_imgs = random.sample(sub_imgs, n_shot + n_query)
+            sub_selected_imgs = random.sample(sub_imgs, test_n_shot + test_n_query)
             selected_imgs[i] = sub_selected_imgs
 
         trans_loader = TransformLoader(image_size)
@@ -185,12 +152,12 @@ if __name__ == "__main__":
             data.append(sub_data)
         test_data_episode = torch.stack(data)
 
-        model.n_support = n_shot
-        model.n_query = n_query
+        model.n_support = test_n_shot
+        model.n_query = test_n_query
         scores = model.set_forward(test_data_episode)
 
         pred = scores.data.cpu().numpy().argmax(axis = 1)
-        y = np.repeat(range( n_way ), n_query )
+        y = np.repeat(range( test_n_way ), test_n_query )
         acc = np.mean(pred == y)*100
         print(acc)
 

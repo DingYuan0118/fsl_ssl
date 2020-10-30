@@ -24,9 +24,9 @@ def init_loader(filename):
     with h5py.File(filename, 'r') as f:
         fileset = SimpleHDF5Dataset(f)
 
-    feats = fileset.all_feats_dset
+    feats = fileset.all_feats_dset # size(num_dataset )
     labels = fileset.all_labels
-    while np.sum(feats[-1]) == 0:
+    while np.sum(feats[-1]) == 0: # when dataset size cannot % batch_size, remove the last Redundant data
         feats  = np.delete(feats,-1,axis = 0)
         labels = np.delete(labels,-1,axis = 0)
         
