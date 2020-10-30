@@ -104,11 +104,7 @@ if __name__=='__main__':
 
     model = model.cuda()
 
-    if params.test_dataset == params.transfered_dataset:
-        params.checkpoint_dir = get_checkpoint_path(params)
-        params.checkpoint_dir_test = params.checkpoint_dir
-    else :
-        params.checkpoint_dir, params.checkpoint_dir_test = get_checkpoint_path(params)
+    params.checkpoint_dir, params.checkpoint_dir_test = get_checkpoint_path(params)
     checkpoint_dir_test = params.checkpoint_dir_test
     if not os.path.isdir(params.checkpoint_dir):
         os.makedirs(params.checkpoint_dir)
