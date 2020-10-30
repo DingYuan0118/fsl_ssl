@@ -76,7 +76,7 @@ if __name__=='__main__':
         
         cl_data_file = feat_loader.init_loader(novel_file)
         for i in range(iter_num):
-            acc = feature_evaluation(cl_data_file, model, n_query = 50, adaptation = params.adaptation, **few_shot_params)
+            acc = feature_evaluation(cl_data_file, model, n_query = params,test_n_query, adaptation = params.adaptation, **few_shot_params)
             acc_all.append(acc)
 
         acc_all  = np.asarray(acc_all)

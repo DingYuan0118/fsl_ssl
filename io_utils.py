@@ -173,7 +173,7 @@ def get_checkpoint_path(params):
         return checkpoint_dir
 
 
-def combine_dataset(source1, source2):
+def combine_dataset_from_different_domain(source1, source2):
     """
     combine different dataset.
 
@@ -204,11 +204,21 @@ def combine_dataset(source1, source2):
     return dataset
 
 
+def combine_dataset_from_same_domain(source1, source2):
+    """
+    combine different dataset from the same domain, such as base.json and val.json.
+
+    params:
+        source1: dataset1 json path
+        source2: dataset2 json path
+    """
+    pass
+
 # test functions
 if __name__ == "__main__":
     source1 = "filelists\\cars\\base.json"
-    source2 = "filelists\\aircrafts\\base.json"
-    dataset = combine_dataset(source1, source2)
+    source2 = "filelists\\cars\\base.json"
+    dataset = combine_dataset_from_same_source(source1, source2)
     with open("combine.json", "w") as f:
         json.dump(dataset, f)
     print(dataset.keys())
