@@ -1,11 +1,14 @@
 import numpy as np
-import torch
-from torch.autograd import Variable
+from collections import defaultdict
 import os
 import h5py
 import random
+import json
+from pathlib import Path
 
 import backbone
+import torch
+from torch.autograd import Variable
 from data.datamgr import SimpleDataManager, SetDataManager
 from methods.baselinetrain import BaselineTrain
 # from methods.baselinefinetune import BaselineFinetune
@@ -253,4 +256,101 @@ def load_weight_file_for_test(model, params):
     return model
 
 
+def read_json_file(loadfile):
+    """
+    data prepare process for visualize
+    """
+    with open(loadfile, 'r') as f:
+        meta = json.load(f)
 
+    # Implicit sort the list from small to large 
+    cl_list = np.unique(meta['image_labels']).tolist()
+
+    sub_meta = {}
+    for cl in cl_list:
+        # init dict
+        sub_meta[cl] = []
+
+    for x,y in zip(meta['image_names'],meta['image_labels']):
+        # create subdataset for each class
+        sub_meta[y].append(x)
+    return sub_meta, meta
+
+
+def manual_compute_scores(test_data_episode, model, test_n_way, test_n_shot, test_n_query):
+    """
+    params:
+        test_data_episode (tensor):  shape(test_n_way, test_n_shot+test_n_query, channels, img_size, imgsize) , eg:(5, 21, 3, 224, 224)
+        model :  used to computer classfier scores
+        test_n_way, test_n_shot, test_n_query: few-shot params
+    """
+    model.n_support = test_n_shot
+    model.n_query = test_n_query
+    scores = model.set_forward(test_data_episode)
+
+    pred = scores.data.cpu().numpy().argmax(axis = 1)
+    y = np.repeat(range( test_n_way ), test_n_query )
+    acc = np.mean(pred == y)*100
+    print("acc:{:.4f}".format(acc))
+    return acc
+
+
+def visualize_support_imgs(selected_imgs, class_names, test_n_shot, image_size):
+    """
+    use html to draw pictures in a tabel, according to the CIFAR10 site
+    params:
+        selected_imgs : a dict format like {class_id_1: [img_path_1, img_path_2···], ···}
+    """
+    with open("dataset_table.html", "w") as fo:
+        fo.write("<html>\n")
+        fo.write("<body>\n\n")
+        fo.write("<table>\n")
+        for key in selected_imgs.keys():
+            fo.write("\t<tr>\n")
+            fo.write("\t\t<td><font size='5'>{}</font></td>\n".format(class_names[key]))
+            for img_path in selected_imgs[key][:test_n_shot]:
+                fo.write("\t\t<td><img src={0} height={1} width={1} /></td>\n".format(img_path, image_size))
+            fo.write("\t</tr>\n")
+        fo.write("</table>\n")
+        fo.write("</body>\n")
+        fo.write("</html>\n")
+
+
+def produce_subjson_file(selected_classes_id, sub_meta, meta, params):
+    """
+    produce the sub dataset json file
+    
+    params:
+        selected_classes_id (list): the id of selected classes. 
+        sub_meta (dict): a dict format like {class_id_1: [img_path_1, img_path_2···], ···}
+        meta (dict): the dataset dict from a json file
+    """
+
+    sub_json = defaultdict(list)
+    sub_json["label_names"] = meta['label_names']
+    
+    for id in selected_classes_id:
+        sub_json["image_names"].extend(sub_meta[id])
+        sub_json["image_labels"].extend(np.repeat(id, len(sub_meta[id])).tolist())
+    
+    sub_json_file_name = "select_{}_sub.json".format("_".join([str(i) for i in selected_classes_id]))
+    sub_json_path = Path(os.path.join("filelists/{}".format(params.test_dataset), sub_json_file_name)).as_posix()
+    # save sub classes json file
+
+    # produce some message
+    count = 0
+    for id in selected_classes_id:
+        count = count + len(sub_meta[id])
+        # highlight fir digit
+        print("class \033[1;32;m{}\033[0m has \033[1;33;m{}\033[0m samples".format(meta['label_names'][id], len(sub_meta[id])))
+    print("selected dataset has total \033[1;33;m{}\033[0m samples".format(count))
+
+    # write teh sub json file
+    with open(sub_json_path, "w") as fo:
+        json_str = json.dumps(sub_json)
+        fo.write(json_str)
+
+    return sub_json
+
+
+    

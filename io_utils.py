@@ -208,17 +208,19 @@ def combine_dataset_from_same_domain(source1, source2):
     """
     combine different dataset from the same domain, such as base.json and val.json.
 
+    ! maybe not useful
     params:
         source1: dataset1 json path
         source2: dataset2 json path
     """
     pass
 
+
 # test functions
 if __name__ == "__main__":
     source1 = "filelists\\cars\\base.json"
     source2 = "filelists\\cars\\base.json"
-    dataset = combine_dataset_from_same_source(source1, source2)
+    dataset = combine_dataset_from_different_domain(source1, source2)
     with open("combine.json", "w") as f:
         json.dump(dataset, f)
     print(dataset.keys())
