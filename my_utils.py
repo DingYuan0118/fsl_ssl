@@ -367,5 +367,4 @@ def print_class_acc(class_acc, class_names):
     for key in class_acc.keys():
         print("class \033[1;32;m{}\033[0m accuracy is \033[1;33;m{:.5f}\033[0m".format(class_names[key], class_acc[key]))
     print("total acc: \033[1;33;m{:.5f}\033[0m".format(np.mean(list(class_acc.values()))))
-    
-    
+
