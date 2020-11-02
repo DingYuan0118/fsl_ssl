@@ -22,6 +22,7 @@ model_dict = dict(
 
 def parse_args(script):
     parser = argparse.ArgumentParser(description= 'few-shot script %s' %(script))
+    parser.add_argument('--script'      , default=script,           help="used for choose checkpoint ")
     parser.add_argument('--dataset'     , default='CUB',            help='CUB/cars/flowers/dogs/aircrafts/miniImagenet/tieredImagenet')
     parser.add_argument('--model'       , default='resnet18',       help='model: Conv{4|6} / ResNet{10|18|34|50|101}') # 50 and 101 are not used in the paper
     parser.add_argument('--method'      , default='protonet',       help='baseline/baseline++/protonet/matchingnet/relationnet{_softmax}/maml{_approx}') #relationnet_softmax replace L2 norm with softmax to expedite training, maml_approx use first-order approximation in the gradient for efficiency
@@ -67,6 +68,8 @@ def parse_args(script):
     if script == "mytest":
         parser.add_argument("--test_dataset", default="recognition36", help="for custom few shot dataset test for transfer situation")
         parser.add_argument("--transfered_dataset", default="cars", help="the base training dataset for novel test dataset")
+        parser.add_argument("--test_n_query", default=16, type=int, help="the number of query for test")
+        parser.add_argument("--test_n_shot", default=5, type=int, help="the number of support for test")
 
     parser.add_argument('--layer', default=-1, type=int)
         
@@ -98,44 +101,79 @@ def get_best_file(checkpoint_dir):
 
 def get_checkpoint_path(params):
     # for test process
-    checkpoint_dir = 'checkpoints/%s/%s_%s_%s' %(params.transfered_dataset, params.date, params.model, params.method)
-    if params.train_aug:
-        checkpoint_dir += '_aug'
-    if not params.method in ['baseline', 'baseline++'] :
-        checkpoint_dir += '_%dway_%dshot_%dquery' %( params.train_n_way, params.n_shot, params.n_query)
+    if params.script == "mytest":
+        checkpoint_dir = 'checkpoints/%s/%s_%s_%s' %(params.transfered_dataset, params.date, params.model, params.method)
+        if params.train_aug:
+            checkpoint_dir += '_aug'
+        if not params.method in ['baseline', 'baseline++'] :
+            checkpoint_dir += '_%dway_%dshot_%dquery' %( params.train_n_way, params.n_shot, params.n_query)
 
-    ## Use another dataset (dataloader) for unlabeled data
-    if params.dataset_unlabel is not None:
-        checkpoint_dir += params.dataset_unlabel
-        checkpoint_dir += str(params.bs)
+        ## Use another dataset (dataloader) for unlabeled data
+        if params.dataset_unlabel is not None:
+            checkpoint_dir += params.dataset_unlabel
+            checkpoint_dir += str(params.bs)
 
-    ## Track bn stats
-    if params.tracking:
-        params.checkpoint_dir += '_tracking'
+        ## Track bn stats
+        if params.tracking:
+            params.checkpoint_dir += '_tracking'
 
-    ## Add jigsaw
-    if params.jigsaw:
-        checkpoint_dir += '_jigsaw_lbda%.2f'%(params.lbda)
-        checkpoint_dir += params.optimization
-    ## Add rotation
-    if params.rotation:
-        checkpoint_dir += '_rotation_lbda%.2f'%(params.lbda)
-        checkpoint_dir += params.optimization
+        ## Add jigsaw
+        if params.jigsaw:
+            checkpoint_dir += '_jigsaw_lbda%.2f'%(params.lbda)
+            checkpoint_dir += params.optimization
+        ## Add rotation
+        if params.rotation:
+            checkpoint_dir += '_rotation_lbda%.2f'%(params.lbda)
+            checkpoint_dir += params.optimization
 
-    checkpoint_dir += '_lr%.4f'%(params.lr)
-    if params.finetune:
-        checkpoint_dir += '_finetune'
+        checkpoint_dir += '_lr%.4f'%(params.lr)
+        if params.finetune:
+            checkpoint_dir += '_finetune'
 
-    print('checkpoint path:',checkpoint_dir)
-    if params.test_dataset == params.transfered_dataset:
+        print('checkpoint path:',checkpoint_dir)
+        if params.test_dataset == params.transfered_dataset:
+            check_dir_test = checkpoint_dir
+            return checkpoint_dir, check_dir_test
+        else:
+            check_dir_test = checkpoint_dir.replace(params.transfered_dataset, params.test_dataset)
+            check_dir_test += "_{}".format(params.transfered_dataset)
+            print('test checkpoint path:', check_dir_test)
+            return checkpoint_dir, check_dir_test
+    
+    elif params.script in ["train", "test"]:
+        checkpoint_dir = 'checkpoints/%s/%s_%s_%s' %(params.dataset, params.date, params.model, params.method)
+        if params.train_aug:
+            checkpoint_dir += '_aug'
+        if not params.method in ['baseline', 'baseline++'] :
+            checkpoint_dir += '_%dway_%dshot_%dquery' %( params.train_n_way, params.n_shot, params.n_query)
+
+        ## Use another dataset (dataloader) for unlabeled data
+        if params.dataset_unlabel is not None:
+            checkpoint_dir += params.dataset_unlabel
+            checkpoint_dir += str(params.bs)
+
+        ## Track bn stats
+        if params.tracking:
+            params.checkpoint_dir += '_tracking'
+
+        ## Add jigsaw
+        if params.jigsaw:
+            checkpoint_dir += '_jigsaw_lbda%.2f'%(params.lbda)
+            checkpoint_dir += params.optimization
+        ## Add rotation
+        if params.rotation:
+            checkpoint_dir += '_rotation_lbda%.2f'%(params.lbda)
+            checkpoint_dir += params.optimization
+
+        checkpoint_dir += '_lr%.4f'%(params.lr)
+        if params.finetune:
+            checkpoint_dir += '_finetune'
+
+        print('checkpoint path:',checkpoint_dir)
         return checkpoint_dir
-    else:
-        check_dir_test = checkpoint_dir.replace(params.transfered_dataset, params.test_dataset)
-        check_dir_test += "_{}".format(params.transfered_dataset)
-        print('test checkpoint path:', check_dir_test)
-        return checkpoint_dir, check_dir_test
 
-def combine_dataset(source1, source2):
+
+def combine_dataset_from_different_domain(source1, source2):
     """
     combine different dataset.
 
@@ -166,11 +204,23 @@ def combine_dataset(source1, source2):
     return dataset
 
 
+def combine_dataset_from_same_domain(source1, source2):
+    """
+    combine different dataset from the same domain, such as base.json and val.json.
+
+    ! maybe not useful
+    params:
+        source1: dataset1 json path
+        source2: dataset2 json path
+    """
+    pass
+
+
 # test functions
 if __name__ == "__main__":
     source1 = "filelists\\cars\\base.json"
-    source2 = "filelists\\aircrafts\\base.json"
-    dataset = combine_dataset(source1, source2)
+    source2 = "filelists\\cars\\base.json"
+    dataset = combine_dataset_from_different_domain(source1, source2)
     with open("combine.json", "w") as f:
         json.dump(dataset, f)
     print(dataset.keys())

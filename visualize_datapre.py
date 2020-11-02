@@ -1,3 +1,5 @@
+# 暂时弃用
+
 import os
 import numpy as np
 import json
@@ -11,7 +13,7 @@ import time
 from data.datamgr import TransformLoader
 
 
-def visualize_datapre(params, loadfile):
+def visualize_datapre(loadfile):
     """
     data prepare process for visualize
     """
@@ -29,6 +31,8 @@ def visualize_datapre(params, loadfile):
         # create subdataset for each class
         sub_meta[y].append(x)
     return sub_meta, meta['label_names']
+
+
 
 if __name__ == "__main__":
     # test function
@@ -81,4 +85,5 @@ if __name__ == "__main__":
         sub_data = torch.stack(sub_data, dim=0)
         data.append(sub_data)
     test_data_episode = torch.stack(data)
-    print(test_data_episode.shape)
+    
+    

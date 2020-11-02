@@ -22,7 +22,7 @@ from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file , get_assigned_file
 
 def feature_evaluation(cl_data_file, model, n_way = 5, n_support = 5, n_query = 15, adaptation = False):
-    class_list = cl_data_file.keys()
+    class_list = cl_data_file.keys() # cl_data_file is a dict: {class_id: sample_paths}
 
     select_class = random.sample(class_list,n_way)
     z_all  = []
@@ -31,8 +31,10 @@ def feature_evaluation(cl_data_file, model, n_way = 5, n_support = 5, n_query = 
         perm_ids = np.random.permutation(len(img_feat)).tolist()
         z_all.append( [ np.squeeze( img_feat[perm_ids[i]]) for i in range(n_support+n_query) ] )     # stack each batch
 
-    z_all = torch.from_numpy(np.array(z_all) )
+    z_all = torch.from_numpy(np.array(z_all) ) # z_all changed from list size(n_way, n_support+n_query, feature_dim)
 
+    model.n_way = n_way  # predefined in 
+    model.n_support = n_support
     model.n_query = n_query
     if adaptation:
         scores  = model.set_forward_adaptation(z_all, is_feature = True)

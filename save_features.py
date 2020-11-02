@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import os
 import glob
 import h5py
+import json
 
 import backbone
 from data.datamgr import SimpleDataManager
@@ -15,32 +16,7 @@ from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
 from model_resnet import *
-
-def save_features(model, data_loader, outfile ):
-    f = h5py.File(outfile, 'w')
-    max_count = len(data_loader)*data_loader.batch_size
-    all_labels = f.create_dataset('all_labels',(max_count,), dtype='i')
-    all_feats=None
-    count=0
-    for i, (x,y) in enumerate(data_loader):
-        if i%10 == 0:
-            print('{:d}/{:d}'.format(i, len(data_loader)))
-        x = x.cuda()
-        x_var = Variable(x)
-        feats = model(x_var)
-        if all_feats is None:
-            all_feats = f.create_dataset('all_feats', [max_count] + list( feats.size()[1:]) , dtype='f')
-        all_feats[count:count+feats.size(0)] = feats.data.cpu().numpy()
-        all_labels[count:count+feats.size(0)] = y.cpu().numpy()
-        count = count + feats.size(0)
-
-    count_var = f.create_dataset('count', (1,), dtype='i')
-    count_var[0] = count
-    # add some printing to understand the program
-    print("Message about the feature file:\n")
-    f.visititems(print)
-
-    f.close()
+from my_utils import save_features
 
 if __name__ == '__main__':
     params = parse_args('mytest')
@@ -53,17 +29,20 @@ if __name__ == '__main__':
 
     # three situation for recognition36 dataset ["novel", "novel_car", "novel_plane"]
     split = 'novel'
+
     loadfile = os.path.join('filelists', params.test_dataset, split+".json")
+    with open(loadfile, 'r') as f:
+        meta = json.load(f)
+    print("dataset length:", len(meta['image_names']))
+
 
     # if params.json_seed is not None:
     #     checkpoint_dir = '%s/checkpoints/%s_%s/%s_%s_%s' %(configs.save_dir, params.dataset, params.json_seed, params.date, params.model, params.method)
     # else:
-    if params.test_dataset == params.transfered_dataset:
-        checkpoint_dir = get_checkpoint_path(params)
-        checkpoint_dir_test = checkpoint_dir
-    else :
-        checkpoint_dir, checkpoint_dir_test = get_checkpoint_path(params)
-    
+    params.checkpoint_dir, params.checkpoint_dir_test = get_checkpoint_path(params)
+    checkpoint_dir_test = params.checkpoint_dir_test
+    checkpoint_dir = params.checkpoint_dir
+
     if params.loadfile != '':
         modelfile   = params.loadfile
         checkpoint_dir = params.loadfile
@@ -75,18 +54,20 @@ if __name__ == '__main__':
         else:
             modelfile   = get_best_file(checkpoint_dir)
 
+    assert modelfile, "can not find model weight file in {}".format(checkpoint_dir)
+    print("use model weight file: ", modelfile)
 
-    if os.path.isdir(checkpoint_dir_test):
+    if not os.path.isdir(checkpoint_dir_test):
         os.makedirs(checkpoint_dir_test)
 
 
     if params.save_iter != -1:
         outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_" + str(params.save_iter)+ ".hdf5")
     else:
-        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + ".hdf5")
+        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_shuffle_True.hdf5")
 
 
-    datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft)
+    datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=True)
     data_loader      = datamgr.get_data_loader(loadfile, aug = False)
 
     if params.method in ['relationnet', 'relationnet_softmax']:
