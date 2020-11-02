@@ -17,7 +17,7 @@ from methods.matchingnet import MatchingNet
 from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
-from my_utils import select_dataloader_for_train, select_model, load_presaved_model_for_train
+from my_utils import select_dataloader_for_train, select_model, load_presaved_model_for_train, feature_evaluation, save_features
 # from tensorboardX import SummaryWriter
 from torch.utils.tensorboard import SummaryWriter
 import json
@@ -173,18 +173,18 @@ if __name__=='__main__':
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
         print('save outfile at:', outfile)
-        from save_features import save_features
+
         save_features(model, data_loader, outfile)
 
         ### from test.py ###
-        from test import feature_evaluation
+
         novel_file = os.path.join( checkpoint_dir.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
         print('load novel file from:',novel_file)
         import data.feature_loader as feat_loader
         cl_data_file = feat_loader.init_loader(novel_file)
 
         for i in range(iter_num):
-            acc = feature_evaluation(cl_data_file, model, n_query = 15, adaptation = params.adaptation, **few_shot_params)
+            acc, _ = feature_evaluation(cl_data_file, model, n_query = 15, adaptation = params.adaptation, **few_shot_params)
             acc_all.append(acc)
 
         acc_all  = np.asarray(acc_all)

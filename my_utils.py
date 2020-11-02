@@ -68,8 +68,12 @@ def feature_evaluation(cl_data_file, model, n_way = 5, n_support = 5, n_query = 
         scores  = model.set_forward(z_all, is_feature = True)
     pred = scores.data.cpu().numpy().argmax(axis = 1)
     y = np.repeat(range( n_way ), n_query )
+    class_acc = {}
+    for i, cl in enumerate(select_class):
+        class_acc[cl] = np.mean((pred == y)[i * n_query : (i+1) * n_query])*100
+    
     acc = np.mean(pred == y)*100
-    return acc
+    return acc, class_acc
 
 
 def select_model(params):
@@ -314,6 +318,7 @@ def visualize_support_imgs(selected_imgs, class_names, test_n_shot, image_size):
         fo.write("</table>\n")
         fo.write("</body>\n")
         fo.write("</html>\n")
+    print("\033[1;32;m{}\033[0m generated.".format("dataset_table.html"))
 
 
 def produce_subjson_file(selected_classes_id, sub_meta, meta, params):
@@ -353,4 +358,14 @@ def produce_subjson_file(selected_classes_id, sub_meta, meta, params):
     return sub_json_name, sub_json_path
 
 
+def print_class_acc(class_acc, class_names):
+    """
+    params: 
+        class_acc: a dict format like {class_id : acc}
+        class_names: a List cointain the class_name by the order in dataset
+    """
+    for key in class_acc.keys():
+        print("class \033[1;32;m{}\033[0m accuracy is \033[1;33;m{:.5f}\033[0m".format(class_names[key], class_acc[key]))
+    print("total acc: \033[1;33;m{:.5f}\033[0m".format(np.mean(list(class_acc.values()))))
+    
     

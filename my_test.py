@@ -71,12 +71,12 @@ if __name__=='__main__':
 
     else:  ## eg: for Protonet
         ### from test.py ###
-        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +"_shuffle_True.hdf5") #defaut split = novel, but you can also test base or val classes
+        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
         print('load novel file from:',novel_file)
         
         cl_data_file = feat_loader.init_loader(novel_file)
         for i in range(iter_num):
-            acc = feature_evaluation(cl_data_file, model, n_query = params.test_n_query, adaptation = params.adaptation, **few_shot_params)
+            acc, _ = feature_evaluation(cl_data_file, model, n_query = params.test_n_query, adaptation = params.adaptation, **few_shot_params)
             acc_all.append(acc)
 
         acc_all  = np.asarray(acc_all)
