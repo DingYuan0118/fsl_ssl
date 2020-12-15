@@ -75,11 +75,17 @@ if __name__ == "__main__":
         class_names = meta['label_names']
 
         random.seed(1)
+        
         # from visualize_datapre.py,already tested
+        
         # params
+        
         test_n_way = params.test_n_way
+        
         test_n_shot = params.test_n_shot
+        
         test_n_query = params.test_n_query
+        
         image_size = params.image_size
 
 
