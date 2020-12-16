@@ -70,7 +70,10 @@ if __name__ == "__main__":
         loadfile = os.path.join('filelists', params.test_dataset, 'novel.json')
 
     else:
-        loadfile = os.path.join('filelists', params.test_dataset, 'novel_all.json')
+        if "recognition36" in params.test_dataset:
+            loadfile = os.path.join('filelists', params.test_dataset, 'novel_all.json')
+        else:
+            loadfile = os.path.join('filelists', params.test_dataset, 'novel.json')
         sub_meta, meta = read_json_file(loadfile)
         class_names = meta['label_names']
 
@@ -91,11 +94,11 @@ if __name__ == "__main__":
 
         classes_id = sub_meta.keys()
         # for test function
-        # selected_classes_id = random.sample(classes_id, test_n_way)
+        selected_classes_id = random.sample(classes_id, test_n_way)
         # # selected_classes_id = random.sample(classes_id, len(classes_id))
         # # selected_classes_id = classes_id
-        seleceted_class_name = ["car_MISSILE_1", "plane_FIGHTER_F15A", "car_CANNON_high", "car_ARM_tiger", "plane_HELI_tiger"]
-        selected_classes_id = [class_names.index(i) for i in seleceted_class_name]
+        # seleceted_class_name = ["car_MISSILE_1", "plane_FIGHTER_F15A", "car_CANNON_high", "car_ARM_tiger", "plane_HELI_tiger"]
+        # selected_classes_id = [class_names.index(i) for i in seleceted_class_name]
 
 
         selected_imgs = {}

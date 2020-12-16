@@ -18,3 +18,5 @@ filelists/tieredImagenet/ILSVRC2015/*
 *.jpg
 *.xml
 *.txt
+*.pdf
+tmp.py
