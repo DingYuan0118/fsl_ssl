@@ -121,7 +121,7 @@ if __name__ == "__main__":
             for image_path in selected_imgs[i]:
                 img = Image.open(image_path).convert('RGB')
                 transformed_img = transform(img)
-                src_imgs[i].append(img)
+                # src_imgs[i].append(img)  # no use in later code
                 transformed_src_imgs[i].append(transformed_img)
         print("load image data cost {:.4f}s".format(time.time() - start))
         data = []
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         # init 
         sub_json_name, sub_json_path = produce_subjson_file(selected_classes_id, sub_meta, meta, params)
         # set the shuffle False to recognize the support sample
-        sub_datamgr  = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=True)
+        sub_datamgr  = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=False)
         sub_data_loader  = sub_datamgr.get_data_loader(sub_json_path, aug = False) 
         
         output_path = checkpoint_dir_test.replace("checkpoints", "features")
