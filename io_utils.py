@@ -157,7 +157,7 @@ def get_checkpoint_path(params):
 
         ## Track bn stats
         if params.tracking:
-            params.checkpoint_dir += '_tracking'
+            checkpoint_dir += '_tracking'
 
         ## Add jigsaw
         if params.jigsaw:

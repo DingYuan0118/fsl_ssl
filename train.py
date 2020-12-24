@@ -17,7 +17,7 @@ from methods.matchingnet import MatchingNet
 from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
-from my_utils import select_dataloader_for_train, select_model, load_presaved_model_for_train, feature_evaluation, save_features
+from my_utils import select_dataloader_for_train, select_model, load_presaved_model_for_train, feature_evaluation, save_features, print_model_params
 # from tensorboardX import SummaryWriter
 from torch.utils.tensorboard import SummaryWriter
 import json
@@ -83,11 +83,7 @@ if __name__=='__main__':
     base_loader, val_loader = select_dataloader_for_train(params)
 
     model = model.cuda()
-    total_params = sum(p.numel() for p in model.parameters())
-    print("{} model {} backbone have {} parameters.".format(model.__class__.__name__, params.model, total_params))
-    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("{} model {} backbone have {} training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))
-
+    print_model_params(model, params)
 
     params.checkpoint_dir = get_checkpoint_path(params)
     if not os.path.isdir(params.checkpoint_dir):

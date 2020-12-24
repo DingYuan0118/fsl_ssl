@@ -22,7 +22,7 @@ from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
 from model_resnet import *
 from my_utils import select_model, load_weight_file_for_test, read_json_file, produce_subjson_file, \
-save_features, feature_evaluation, visualize_support_imgs, print_class_acc
+save_features, feature_evaluation, visualize_support_imgs, print_class_acc, print_model_params
 
 if __name__ == "__main__":
     np.random.seed(10)
@@ -51,11 +51,7 @@ if __name__ == "__main__":
     few_shot_params = dict(n_way = params.test_n_way , n_support = params.n_shot)
     acc_all = []
     model = load_weight_file_for_test(model, params)
-
-    total_params = sum(p.numel() for p in model.parameters())
-    print("{} model \033[1;33;m{}\033[0m backbone have \033[1;33;m{}\033[0m parameters.".format(model.__class__.__name__, params.model, total_params))
-    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("{} model \033[1;33;m{}\033[0m backbone have \033[1;33;m{}\033[0m training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))
+    print_model_params(model, params)
 
     if params.method in ['maml', 'maml_approx']:
         datamgr          = SetDataManager(params.image_size, n_eposide = iter_num, n_query = 15 , **few_shot_params, isAircraft=(params.dataset == 'aircrafts'))

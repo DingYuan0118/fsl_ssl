@@ -107,7 +107,7 @@ def select_model(params):
         train_few_shot_params    = dict(n_way = params.train_n_way, n_support = params.n_shot, \
                                         jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation) 
         if params.method == 'protonet':
-            model           = ProtoNet( model_dict[params.model], **train_few_shot_params, use_bn=(not params.no_bn), pretrain=params.pretrain)
+            model           = ProtoNet( model_dict[params.model], **train_few_shot_params, use_bn=(not params.no_bn), pretrain=params.pretrain, tracking=params.tracking)
         elif params.method == 'matchingnet':
             model           = MatchingNet( model_dict[params.model], **train_few_shot_params )
         elif params.method in ['relationnet', 'relationnet_softmax']:
@@ -368,3 +368,10 @@ def print_class_acc(class_acc, class_names):
         print("class \033[1;32;m{}\033[0m accuracy is \033[1;33;m{:.5f}\033[0m".format(class_names[key], class_acc[key]))
     print("total acc: \033[1;33;m{:.5f}\033[0m".format(np.mean(list(class_acc.values()))))
 
+
+def print_model_params(model, params):
+    total_params = sum(p.numel() for p in model.parameters())
+    total_buffers = sum(q.numel() for q in model.buffers())
+    print("{} model {} backbone have {} parameters.".format(model.__class__.__name__, params.model, total_params + total_buffers))
+    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("{} model {} backbone have {} training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))

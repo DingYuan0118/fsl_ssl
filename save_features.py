@@ -14,7 +14,7 @@ from methods.protonet import ProtoNet
 from methods.matchingnet import MatchingNet
 from methods.relationnet import RelationNet
 from methods.maml import MAML
-from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
+from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path, print_model_params
 from model_resnet import *
 from my_utils import save_features
 
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     model.eval()
     model.cuda()
     model.eval()
-
+    print_model_params(model, params)
     dirname = os.path.dirname(outfile)
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
