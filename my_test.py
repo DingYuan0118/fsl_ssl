@@ -21,7 +21,7 @@ from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get
 from torch.utils.tensorboard import SummaryWriter
 import json
 from model_resnet import *
-from my_utils import load_weight_file_for_test, select_model, feature_evaluation
+from my_utils import load_weight_file_for_test, select_model, feature_evaluation, print_model_params
 import data.feature_loader as feat_loader
 
 
@@ -54,10 +54,7 @@ if __name__=='__main__':
     acc_all = []
 
     model = load_weight_file_for_test(model, params)
-    total_params = sum(p.numel() for p in model.parameters())
-    print("{} model {} backbone have {} parameters.".format(model.__class__.__name__, params.model, total_params))
-    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("{} model {} backbone have {} training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))
+    print_model_params(model, params)
 
     if params.method in ['maml', 'maml_approx']:
         datamgr          = SetDataManager(params.image_size, n_eposide = iter_num, n_query = 15 , **few_shot_params, isAircraft=(params.dataset == 'aircrafts'))
@@ -71,7 +68,7 @@ if __name__=='__main__':
 
     else:  ## eg: for Protonet
         ### from test.py ###
-        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
+        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +"_shuffle_False_bn_8.hdf5") #defaut split = novel, but you can also test base or val classes
         print('load novel file from:',novel_file)
         
         cl_data_file = feat_loader.init_loader(novel_file)
@@ -93,6 +90,6 @@ if __name__=='__main__':
             else:
                 exp_setting = '%s-%s-%s-%s%s %sshot %sway_train %sway_test' %(params.test_dataset, split_str, params.model, params.method, aug_str , params.n_shot , params.train_n_way, params.test_n_way )
             acc_str = '%d Test Acc = %4.2f%% +- %4.2f%%' %(iter_num, acc_mean, 1.96* acc_std/np.sqrt(iter_num))
-            f.write( 'Time: %s, Setting: %s, Acc: %s \n' %(timestamp,exp_setting,acc_str)  )
+            # f.write( 'Time: %s, Setting: %s, Acc: %s \n' %(timestamp,exp_setting,acc_str)  )
 
 

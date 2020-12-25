@@ -14,9 +14,9 @@ from methods.protonet import ProtoNet
 from methods.matchingnet import MatchingNet
 from methods.relationnet import RelationNet
 from methods.maml import MAML
-from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path, print_model_params
+from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
 from model_resnet import *
-from my_utils import save_features
+from my_utils import save_features, print_model_params
 
 if __name__ == '__main__':
     params = parse_args('mytest')
@@ -64,10 +64,10 @@ if __name__ == '__main__':
     if params.save_iter != -1:
         outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_" + str(params.save_iter)+ ".hdf5")
     else:
-        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_shuffle_True.hdf5")
+        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_shuffle_False_bn_8.hdf5")
 
 
-    datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=True)
+    datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=False)
     data_loader      = datamgr.get_data_loader(loadfile, aug = False)
 
     if params.method in ['relationnet', 'relationnet_softmax']:
