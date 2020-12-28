@@ -79,7 +79,7 @@ if __name__=='__main__':
     np.random.seed(10)
     params = parse_args('train')
 
-    isAircraft = (params.test_dataset == 'aircrafts')
+    isAircraft = (params.dataset == 'aircrafts')
 
     model = select_model(params)
     base_loader, val_loader = select_dataloader_for_train(params)
