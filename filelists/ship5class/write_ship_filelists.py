@@ -3,6 +3,7 @@ import numpy as np
 from os import listdir
 from os.path import isfile, isdir, join
 from pathlib import Path
+import copy
 
 
 
@@ -38,15 +39,26 @@ for class_name in class_names_unique:
     
     train_classfile_list.append(train_image_name)
     test_classfile_list.append(test_image_name)
-        
+for i, j in copy.deepcopy(zip(train_classfile_list, test_classfile_list)):
+    i.extend(j)
+    total_classfile_list.append(i)
+
 print(len(train_classfile_list))
 print(len(test_classfile_list))
+print(len(total_classfile_list))
 
 
 
 for dataset in dataset_list:
     file_list = []
     label_list = []
+    if dataset == "train":
+        classfile_list_all = train_classfile_list
+    elif dataset == "test":
+        classfile_list_all = test_classfile_list
+    else:
+        classfile_list_all = total_classfile_list
+
     for i, classfile_list in enumerate(classfile_list_all):
         file_list = file_list + classfile_list
         label_list = label_list + np.repeat(i, len(classfile_list)).tolist()
@@ -70,5 +82,5 @@ for dataset in dataset_list:
     fo.seek(fo.tell()-1, os.SEEK_SET)
     fo.write(']}')
 
-        fo.close()
-        print("%s -OK" %dataset)
+    fo.close()
+    print("%s -OK" %dataset)
