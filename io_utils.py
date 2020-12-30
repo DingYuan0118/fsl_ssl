@@ -116,6 +116,9 @@ def get_checkpoint_path(params):
         ## Track bn stats
         if params.tracking:
             checkpoint_dir += '_tracking'
+
+        if params.pretrain:
+            checkpoint_dir += "_pretrain"
         
         if params.no_bn:
             checkpoint_dir += '_no_bn'
@@ -158,6 +161,12 @@ def get_checkpoint_path(params):
         ## Track bn stats
         if params.tracking:
             checkpoint_dir += '_tracking'
+
+        if params.pretrain:
+            checkpoint_dir += "_pretrain"
+            
+        if params.no_bn:
+            checkpoint_dir += '_no_bn'
 
         ## Add jigsaw
         if params.jigsaw:

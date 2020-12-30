@@ -8,6 +8,8 @@ import torchvision.transforms as transforms
 import os
 identity = lambda x:x
 import math
+from torch.utils.data import Dataset
+
 
 def get_patches(img, transform_jigsaw, transform_patch_jigsaw, permutations):
     if np.random.rand() < 0.30:
@@ -202,6 +204,91 @@ class SubDataset:
 
     def __len__(self):
         return len(self.sub_meta)
+    
+class CustomDataset(Dataset):
+    """
+    provide a custom dataset API, can customizable split the train/val/test dataset
+    """
+    def __init__(self, data_file, mode="train", num_train=5, num_val=10, num_test=None, shuffle=False, grey=False,\
+                transform=transforms.ToTensor(), target_transform=identity):
+        """
+        params:
+            data_file (json file) : a json file contain the whole data file path、 class name and label.
+            model (string) : ["train", "val", "test"] select the split fir 
+            num_train (int) : the number of sample used to train.
+            num_val (int) : the number of sample used to val.
+            num_test (int) : the number of sample used to test. If None, use all the remain sample to test.
+            shuffle(bool) : shuffle the dataset or not before split.
+        """
+        with open(data_file, 'r') as f:
+            self.meta = json.load(f)
+        self.label_names = self.meta["label_names"]
+        self.image_names = self.meta["image_names"]
+        self.image_labels = self.meta["image_labels"]
+        self.cl_list = np.unique(self.image_labels)
+        self.mode = mode
+        self.grey = grey
+        self.transform = transform
+        self.target_transform = target_transform
+        # init sub_meta dict
+        # sub_meta store the images(value) for each class(key)
+        self.sub_meta = {}
+        for cl in self.cl_list:
+            self.sub_meta[cl] = []
+        for x,y in zip(self.meta['image_names'],self.meta['image_labels']):
+            # create subdataset for each class
+            self.sub_meta[y].append(x)
+        # init train_split, val_split, test_split(dict {class_label : img_paths})
+        self.train_split = {}
+        self.val_split = {}
+        self.test_split = {}
+        for x, y in self.sub_meta.items():
+            train_samples = y[ :num_train]
+            val_samples = y[num_train : num_train + num_val]
+            test_samples = y[num_train + num_val :]
+            self.train_split[x] = train_samples
+            self.val_split[x] = val_samples
+            self.test_split[x] = test_samples
+
+        self.data = []
+        self.target = []
+        assert self.mode in ["train", "val", "test"], "mode error, must be ['train', 'val', 'test']"
+        if self.mode == "train":
+            for i,j in self.train_split.items():
+                self.data.extend(j)
+                self.target.extend(np.repeat(i, len(j)).tolist())
+        elif self.mode == "val":
+            for i,j in self.val_split.items():
+                self.data.extend(j)
+                self.target.extend(np.repeat(i, len(j)).tolist())
+        else:
+            for i,j in self.test_split.items():
+                self.data.extend(j)
+                self.target.extend(np.repeat(i, len(j)).tolist())
+        
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is index of the target class.
+        """
+        image_path = os.path.join(self.data[index])
+        if self.grey:
+            img = Image.open(image_path).convert('L').convert('RGB')
+        else:
+            img = Image.open(image_path).convert('RGB')
+        target = self.target[index]
+        img = self.transform(img)
+        target = self.target_transform(target)
+        return img, target
+
+    def __len__(self):
+        return len(self.data)
+
+    def __repr__(self):
+        pass
 
 
 class EpisodicBatchSampler(object):
