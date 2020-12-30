@@ -269,12 +269,12 @@ if __name__ == '__main__':
     writer = SummaryWriter(log_dir=checkpoint_path)
     if arg.flag == "finetune":
         model_ft = model_finetune(pretrain=arg.pretrain, num_epochs=num_epochs, num_classes=num_classes, use_sche=arg.use_sche)
-        torch.save(model_ft.state_dict, os.path.join(checkpoint_path, "{}_best.tar".format(arg.batch_size)))
+        torch.save(model_ft.state_dict, os.path.join(checkpoint_path, "batch_size{}_best.tar".format(arg.batch_size)))
         test_acc = test_model(model_ft, dataloaders["test"])
 
     elif arg.flag == "extractor":
         model_conv = model_as_extractor(pretrain=arg.pretrain, num_epochs=num_epochs, num_classes=num_classes, use_sche=arg.use_sche)
-        torch.save(model_conv.state_dict, os.path.join(checkpoint_path, "{}_best.tar".format(arg.batch_size)))
+        torch.save(model_conv.state_dict, os.path.join(checkpoint_path, "batch_size{}_best.tar".format(arg.batch_size)))
         test_acc = test_model(model_conv, dataloaders["test"])
     
     print("test acc:{:.2f}".format(test_acc))
