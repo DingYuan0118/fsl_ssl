@@ -1,3 +1,4 @@
+from methods.baselinefinetune import BaselineFinetune
 import numpy as np
 from collections import defaultdict
 import os
@@ -80,6 +81,7 @@ def select_model(params):
     """
     select which model to use based on params
     """
+    few_shot_params = dict(n_way = params.test_n_way , n_support = params.n_shot)
     if params.method in ['baseline', 'baseline++'] :
         if params.dataset == 'CUB':
             params.num_classes = 200
@@ -96,12 +98,18 @@ def select_model(params):
         elif params.dataset == 'tieredImagenet':
             params.num_classes = 608
 
-        if params.method == 'baseline':
-            model           = BaselineTrain( model_dict[params.model], params.num_classes, \
-                                            jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
-        elif params.method == 'baseline++':
-            model           = BaselineTrain( model_dict[params.model], params.num_classes, \
-                                            loss_type = 'dist', jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
+        if params.script not in ['test', 'mytest']:
+            if params.method == 'baseline':
+                model           = BaselineTrain( model_dict[params.model], params.num_classes, \
+                                                jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
+            elif params.method == 'baseline++':
+                model           = BaselineTrain( model_dict[params.model], params.num_classes, \
+                                                loss_type = 'dist', jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
+        else :
+            if params.method == 'baseline':
+                model           = BaselineFinetune( model_dict[params.model], **few_shot_params, tracking=params.tracking)
+            elif params.method == 'baseline++':
+                model           = BaselineFinetune( model_dict[params.model], loss_type = 'dist', **few_shot_params, tracking=params.tracking)
 
     elif params.method in ['protonet','matchingnet','relationnet', 'relationnet_softmax', 'maml', 'maml_approx']:
         train_few_shot_params    = dict(n_way = params.train_n_way, n_support = params.n_shot, \

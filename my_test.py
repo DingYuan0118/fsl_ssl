@@ -28,6 +28,7 @@ import data.feature_loader as feat_loader
 if __name__=='__main__':
     np.random.seed(10)
     params = parse_args('mytest')
+    few_shot_params = dict(n_way = params.test_n_way , n_support = params.n_shot)
 
     model = select_model(params)
 
@@ -50,7 +51,6 @@ if __name__=='__main__':
 
 
     iter_num = 600
-    few_shot_params = dict(n_way = params.test_n_way , n_support = params.n_shot)
     acc_all = []
 
     model = load_weight_file_for_test(model, params)
@@ -68,7 +68,7 @@ if __name__=='__main__':
 
     else:  ## eg: for Protonet
         ### from test.py ###
-        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +"_shuffle_True.hdf5") #defaut split = novel, but you can also test base or val classes
+        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
         print('load novel file from:',novel_file)
         _, split_str = os.path.split(novel_file)
         

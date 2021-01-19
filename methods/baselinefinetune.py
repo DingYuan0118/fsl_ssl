@@ -8,8 +8,8 @@ from methods.meta_template import MetaTemplate
 from model_resnet import *
 
 class BaselineFinetune(MetaTemplate):
-    def __init__(self, model_func, n_way, n_support, use_bn=True, pretrain=False, loss_type = "softmax"):
-        super(BaselineFinetune, self).__init__(model_func,  n_way, n_support, use_bn, pretrain)
+    def __init__(self, model_func, n_way, n_support, use_bn=True, pretrain=False, loss_type = "softmax", tracking=False):
+        super(BaselineFinetune, self).__init__(model_func,  n_way, n_support, use_bn, pretrain, tracking=tracking)
         self.loss_type = loss_type
 
     def set_forward(self,x,is_feature = True):
