@@ -68,7 +68,7 @@ if __name__=='__main__':
 
     else:  ## eg: for Protonet
         ### from test.py ###
-        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
+        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +"_shuffle_True_bn_16.hdf5") #defaut split = novel, but you can also test base or val classes
         print('load novel file from:',novel_file)
         _, split_str = os.path.split(novel_file)
         

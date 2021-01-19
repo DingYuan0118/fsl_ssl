@@ -261,7 +261,10 @@ def load_weight_file_for_test(model, params):
                 state.pop(key)
         ## for protonets
 
+        assert model.feature.state_dict().keys != state.keys(), "model's state doesn't match loaded model file"
+        print("model state keys matched.")
         model.feature.load_state_dict(state)
+        print("load weight file succeed.")
         model.eval()
         model = model.cuda()
         model.eval()
@@ -380,6 +383,6 @@ def print_class_acc(class_acc, class_names):
 def print_model_params(model, params):
     total_params = sum(p.numel() for p in model.parameters())
     total_buffers = sum(q.numel() for q in model.buffers())
-    print("{} model {} backbone have {} parameters.".format(model.__class__.__name__, params.model, total_params + total_buffers))
+    print("\033[1;32;m{}\033[0m model \033[1;32;m{}\033[0m backbone have \033[1;32;m{}\033[0m parameters.".format(model.__class__.__name__, params.model, total_params + total_buffers))
     total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("{} model {} backbone have {} training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))
+    print("\033[1;32;m{}\033[0m model \033[1;32;m{}\033[0m backbone have \033[1;32;m{}\033[0m training parameters.".format(model.__class__.__name__, params.model, total_trainable_params))

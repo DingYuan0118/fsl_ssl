@@ -16,7 +16,7 @@ from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file, get_checkpoint_path
 from model_resnet import *
-from my_utils import save_features, print_model_params
+from my_utils import save_features, print_model_params, select_model, load_weight_file_for_test
 
 if __name__ == '__main__':
     params = parse_args('mytest')
@@ -70,47 +70,10 @@ if __name__ == '__main__':
     datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=True)
     data_loader      = datamgr.get_data_loader(loadfile, aug = False)
 
-    if params.method in ['relationnet', 'relationnet_softmax']:
-        if params.model == 'Conv4':
-            model = backbone.Conv4NP()
-        elif params.model == 'Conv6':
-            model = backbone.Conv6NP()
-        elif params.model == 'Conv4S':
-            model = backbone.Conv4SNP()
-        else:
-            model = model_dict[params.model]( flatten = False )
-    elif params.method in ['maml' , 'maml_approx']:
-       raise ValueError('MAML do not support save feature')
-    else:
-        train_few_shot_params    = dict(n_way = params.train_n_way, n_support = params.n_shot, \
-                                        jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
-        if params.method == 'protonet':
-            print("USE BN:",not params.no_bn)
-            model           = ProtoNet( model_dict[params.model], **train_few_shot_params , use_bn = (not params.no_bn))
-        elif params.method == 'matchingnet':
-            model           = MatchingNet( model_dict[params.model], **train_few_shot_params )
-        else:# baseline and baseline++
-            if isinstance(model_dict[params.model],str):
-                if model_dict[params.model] == 'resnet18':
-                    model = ResidualNet('ImageNet', 18, 1000, None)
-            else:
-                model = model_dict[params.model]()
-
+    model = select_model(params)
+    model = load_weight_file_for_test(model, params)
     model = model.cuda()
-    if params.method != 'baseline':
-        model.feature = model.feature.cuda()
-
-    tmp = torch.load(modelfile)
-    state = tmp['state']
-    state_keys = list(state.keys())
-    for i, key in enumerate(state_keys):
-        if "feature." in key:
-            newkey = key.replace("feature.","")  # an architecture model has attribute 'feature', load architecture feature to backbone by casting name from 'feature.trunk.xx' to 'trunk.xx'
-            state[newkey] = state.pop(key)
-        else:
-            state.pop(key)
-
-    model.feature.load_state_dict(state)
+    
     model.feature.eval()
     model.eval()
     model.cuda()
