@@ -43,20 +43,6 @@ if __name__ == '__main__':
     checkpoint_dir_test = params.checkpoint_dir_test
     checkpoint_dir = params.checkpoint_dir
 
-    if params.loadfile != '':
-        modelfile   = params.loadfile
-        checkpoint_dir = params.loadfile
-    else:
-        if params.save_iter != -1:
-            modelfile   = get_assigned_file(checkpoint_dir,params.save_iter)
-        elif params.method in ['baseline', 'baseline++'] :
-            modelfile   = get_resume_file(checkpoint_dir)
-        else:
-            modelfile   = get_best_file(checkpoint_dir)
-
-    assert modelfile, "can not find model weight file in {}".format(checkpoint_dir)
-    print("use model weight file: ", modelfile)
-
     if not os.path.isdir(checkpoint_dir_test):
         os.makedirs(checkpoint_dir_test)
 
@@ -64,10 +50,10 @@ if __name__ == '__main__':
     if params.save_iter != -1:
         outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_" + str(params.save_iter)+ ".hdf5")
     else:
-        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_shuffle_True_bn_16.hdf5")
+        outfile = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split + "_shuffle_False_bn_16.hdf5")
 
 
-    datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=True)
+    datamgr         = SimpleDataManager(image_size, batch_size = params.test_bs, isAircraft=isAircraft, shuffle=False)
     data_loader      = datamgr.get_data_loader(loadfile, aug = False)
 
     model = select_model(params)

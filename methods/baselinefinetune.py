@@ -38,6 +38,7 @@ class BaselineFinetune(MetaTemplate):
         
         batch_size = 4
         support_size = self.n_way* self.n_support
+        print_frep = 100
         for epoch in range(100):
             rand_id = np.random.permutation(support_size)
             for i in range(0, support_size , batch_size):

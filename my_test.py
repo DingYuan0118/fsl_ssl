@@ -51,6 +51,7 @@ if __name__=='__main__':
 
 
     iter_num = 600
+    print_frep = 10
     acc_all = []
 
     model = load_weight_file_for_test(model, params)
@@ -68,14 +69,19 @@ if __name__=='__main__':
 
     else:  ## eg: for Protonet
         ### from test.py ###
-        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +"_shuffle_True_bn_16.hdf5") #defaut split = novel, but you can also test base or val classes
+        novel_file = os.path.join( checkpoint_dir_test.replace("checkpoints","features"), split_str +"_shuffle_False_bn_16.hdf5") #defaut split = novel, but you can also test base or val classes
         print('load novel file from:',novel_file)
         _, split_str = os.path.split(novel_file)
         
         cl_data_file = feat_loader.init_loader(novel_file)
+        start = time.time()
         for i in range(iter_num):
             acc, _ = feature_evaluation(cl_data_file, model, n_query = params.test_n_query, adaptation = params.adaptation, **few_shot_params)
             acc_all.append(acc)
+            if (i+1) % print_frep == 0:
+                print('test episode number {:3d}/{:d} | acc {:2f}'.format(i+1, iter_num, np.mean(acc_all)))
+        end = time.time()
+        print("600 test episode cost {}".format(end - start))
 
         acc_all  = np.asarray(acc_all)
         acc_mean = np.mean(acc_all)
