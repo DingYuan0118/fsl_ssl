@@ -154,7 +154,7 @@ def model_finetune(pretrain=True, num_epochs=25, num_classes=5, use_sche=False):
     optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
 
     # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+    exp_lr_scheduler = lr_scheduler.MultiStepLR(optimizer_ft, milestones=[80, 160], gamma=0.1)
 
     model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler,
                            num_epochs=num_epochs, use_sche=use_sche)
@@ -180,7 +180,7 @@ def model_as_extractor(pretrain=True, num_epochs=25, num_classes=5, use_sche=Fal
     optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
 
     # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=8, gamma=0.1)
+    exp_lr_scheduler = lr_scheduler.MultiStepLR(optimizer_conv, milestones=[160, 240], gamma=0.1)
     model_conv = train_model(model_conv, criterion, optimizer_conv,
                              exp_lr_scheduler, num_epochs=num_epochs, use_sche=use_sche)
     return model_conv
@@ -208,6 +208,7 @@ if __name__ == '__main__':
     parse.add_argument('--eval', action='store_true', help='set the eval mode')
     parse.add_argument('--use_sche', default=False, action='store_true', help="use scheduler or not")
     parse.add_argument('--batch_size', default=4, type=int, help="batch size used for train")
+    parse.add_argument('--num_workers', default=8, type=int, help="control the number of num_workers, For linux default is 8, for windows default is 0")
 
     arg = parse.parse_args()
     num_train = arg.num_train
@@ -241,11 +242,11 @@ if __name__ == '__main__':
                                 num_val=10, transform=data_transforms["val"])
 
     dataloaders = {"train": torch.utils.data.DataLoader(train_dataset, batch_size=arg.batch_size,
-                                                  shuffle=True, num_workers=0),\
+                                                  shuffle=True, num_workers=arg.num_workers),\
                     "val" : torch.utils.data.DataLoader(val_dataset, batch_size=4,
-                                                  shuffle=True, num_workers=0),\
+                                                  shuffle=True, num_workers=arg.num_workers),\
                     "test" : torch.utils.data.DataLoader(test_dataset, batch_size=4,
-                                                  shuffle=True, num_workers=0)}
+                                                  shuffle=True, num_workers=arg.num_workers)}
     
     dataset_sizes = {"train": len(train_dataset), "val": len(val_dataset), "test": len(test_dataset)}
     print("datasize: train={train} samples, val={val} samples, test={test} samples".format(**dataset_sizes))
@@ -264,8 +265,9 @@ if __name__ == '__main__':
     # use --pretrain to set pretrain mode or not
     # use --epoch to set number of epoch
     # use --shot ti set number of shots
-    checkpoint_path = "checkpoints/{0}/_resnet18_transfer_{1}_{2}_shots".format(arg.dataset, arg.flag, arg.num_train)
-
+    checkpoint_path = "checkpoints/{0}/_resnet18_transfer_{1}_{3}_epochs_{2}_shots".format(arg.dataset, arg.flag, arg.num_train, arg.num_epochs)
+    if arg.use_sche:
+        checkpoint_path += "_use_sche"
     writer = SummaryWriter(log_dir=checkpoint_path)
     if arg.flag == "finetune":
         model_ft = model_finetune(pretrain=arg.pretrain, num_epochs=num_epochs, num_classes=num_classes, use_sche=arg.use_sche)
