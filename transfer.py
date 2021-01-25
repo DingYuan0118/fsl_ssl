@@ -209,26 +209,43 @@ if __name__ == '__main__':
     parse.add_argument('--use_sche', default=False, action='store_true', help="use scheduler or not")
     parse.add_argument('--batch_size', default=4, type=int, help="batch size used for train")
     parse.add_argument('--num_workers', default=8, type=int, help="control the number of num_workers, For linux default is 8, for windows default is 0")
+    parse.add_argument('--aug', action="store_true", help="use random crop resize argument")
 
     arg = parse.parse_args()
     num_train = arg.num_train
     num_epochs = arg.num_epochs
-    data_transforms = {
-        'train': transforms.Compose([
-            # transforms.RandomResizedCrop(224),
-            transforms.Resize((224, 224)),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize((224, 224)),
-            # transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-    }
-
+    if arg.aug:
+        data_transforms = {
+            'train': transforms.Compose([
+                transforms.RandomResizedCrop(224, scale=(0.5, 1)),
+                # transforms.Resize((224, 224)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]),
+            'val': transforms.Compose([
+                transforms.Resize((224, 224)),
+                # transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]),
+        }
+    else:
+        data_transforms = {
+            'train': transforms.Compose([
+                # transforms.RandomResizedCrop(224, scale=(0.5, 1)),
+                transforms.Resize((224, 224)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]),
+            'val': transforms.Compose([
+                transforms.Resize((224, 224)),
+                # transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]),
+        }
     data_file = os.path.join('filelists', arg.dataset, 'novel.json')
     print("use data file:{}".format(data_file))
 
@@ -268,6 +285,8 @@ if __name__ == '__main__':
     checkpoint_path = "checkpoints/{0}/_resnet18_transfer_{1}_{3}_epochs_{2}_shots".format(arg.dataset, arg.flag, arg.num_train, arg.num_epochs)
     if arg.use_sche:
         checkpoint_path += "_use_sche"
+    if arg.aug:
+        checkpoint_path += "_aug"
     writer = SummaryWriter(log_dir=checkpoint_path)
     if arg.flag == "finetune":
         model_ft = model_finetune(pretrain=arg.pretrain, num_epochs=num_epochs, num_classes=num_classes, use_sche=arg.use_sche)
