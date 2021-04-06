@@ -101,10 +101,10 @@ def select_model(params):
         if params.script not in ['test', 'mytest']:
             if params.method == 'baseline':
                 model           = BaselineTrain( model_dict[params.model], params.num_classes, \
-                                                jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
+                                                jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking, pretrain=params.pretrain)
             elif params.method == 'baseline++':
                 model           = BaselineTrain( model_dict[params.model], params.num_classes, \
-                                                loss_type = 'dist', jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking)
+                                                loss_type = 'dist', jigsaw=params.jigsaw, lbda=params.lbda, rotation=params.rotation, tracking=params.tracking, pretrain=params.pretrain)
         else :
             if params.method == 'baseline':
                 model           = BaselineFinetune( model_dict[params.model], **few_shot_params, tracking=params.tracking)
